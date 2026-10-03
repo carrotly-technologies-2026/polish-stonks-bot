@@ -1,18 +1,17 @@
 'use server';
 
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { panelApi } from '@/lib/api';
-import { isPanelAuthorized } from '@/lib/auth';
+import { ADMIN_COOKIE, isAdmin } from '@/lib/auth';
 import { STATUSY } from '@/lib/types';
 
 export type ActionState = { ok: boolean; message: string; data?: Record<string, number> } | null;
 
-/** Server Actions can be POSTed to any route, so re-check the panel password here too. */
+/** Viewing is public; every change needs the panel password (login cookie or Basic auth). */
 async function guard(): Promise<ActionState> {
-  const password = process.env.PANEL_PASSWORD;
-  const h = await headers();
-  if (!password || !isPanelAuthorized(h.get('authorization'), password)) {
+  const [h, c] = await Promise.all([headers(), cookies()]);
+  if (!(await isAdmin(h.get('authorization'), c.get(ADMIN_COOKIE)?.value))) {
     return { ok: false, message: 'unauthorized' };
   }
   return null;

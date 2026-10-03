@@ -38,7 +38,7 @@
     "main": "Головна навігація",
     "home": "Головна",
     "report": "Звіт",
-    "panel": "Панель міста",
+    "panel": "Панель",
     "overview": "Огляд",
     "priorities": "Пріоритети",
     "languages": "Мови",
@@ -53,7 +53,15 @@
     "section_publishing": "Публікація",
     "conversations": "Розмови",
     "pipeline": "Конвеєр даних",
-    "openData": "Відкриті дані"
+    "openData": "Відкриті дані",
+    "section_links": "Посилання",
+    "publicReport": "Публічний звіт",
+    "citizenPage": "Для мешканців",
+    "csvMetrics": "Метрики (CSV)",
+    "csvTopics": "Теми (CSV)",
+    "login": "Увійти для редагування",
+    "logout": "Вийти",
+    "editMode": "Режим редагування · вийти"
   },
   "errors": {
     "backendTitle": "Не вдалося завантажити дані",
@@ -294,7 +302,8 @@
     "viewPublic": "Відкрити публічну сторінку",
     "colPeriod": "Період",
     "colCreated": "Створено",
-    "colTopics": "Теми"
+    "colTopics": "Теми",
+    "loginRequired": "Увійдіть для редагування (кнопка у верхньому правому куті), щоб змінювати дані."
   },
   "categories": {
     "BARIERA_FIZYCZNA": "Фізичний бар’єр",

@@ -26,6 +26,7 @@ export function ActionButton({ action, fields, children, variant = 'outline', co
     ? state.data && 'rozmowy' in state.data
       ? t('seeded', { rozmowy: state.data.rozmowy, bariery: state.data.bariery, zapytania: state.data.zapytania })
       : successText ?? t('done')
+    : state?.message === 'unauthorized' ? t('loginRequired')
     : state ? t('failed', { error: state.message }) : '';
   return (
     <form action={run} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }}>
