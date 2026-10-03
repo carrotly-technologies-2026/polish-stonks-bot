@@ -38,7 +38,7 @@
     "main": "Nawigacja główna",
     "home": "Start",
     "report": "Raport",
-    "panel": "Panel miasta",
+    "panel": "Panel",
     "overview": "Przegląd",
     "priorities": "Priorytety",
     "languages": "Języki",
@@ -53,7 +53,15 @@
     "section_publishing": "Publikacja",
     "conversations": "Rozmowy",
     "pipeline": "Pipeline",
-    "openData": "Otwarte dane"
+    "openData": "Otwarte dane",
+    "section_links": "Linki",
+    "publicReport": "Raport publiczny",
+    "citizenPage": "Dla mieszkańców",
+    "csvMetrics": "Metryki (CSV)",
+    "csvTopics": "Tematy (CSV)",
+    "login": "Zaloguj do edycji",
+    "logout": "Wyloguj",
+    "editMode": "Tryb edycji · wyloguj"
   },
   "errors": {
     "backendTitle": "Nie udało się pobrać danych",
@@ -294,7 +302,8 @@
     "viewPublic": "Otwórz stronę publiczną",
     "colPeriod": "Okres",
     "colCreated": "Utworzono",
-    "colTopics": "Tematy"
+    "colTopics": "Tematy",
+    "loginRequired": "Zaloguj się do edycji (przycisk w prawym górnym rogu), aby zmieniać dane."
   },
   "categories": {
     "BARIERA_FIZYCZNA": "Bariera fizyczna",

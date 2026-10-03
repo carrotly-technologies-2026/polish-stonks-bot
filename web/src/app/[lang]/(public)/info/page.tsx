@@ -11,7 +11,7 @@ import { DemoLabel, EmptyState, ErrorCard } from '@/components/ui';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return { alternates: alternates(lang, '') };
+  return { alternates: alternates(lang, '/info') };
 }
 
 export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
