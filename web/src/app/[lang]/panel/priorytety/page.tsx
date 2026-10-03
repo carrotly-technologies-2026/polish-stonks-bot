@@ -12,7 +12,7 @@ import { DataTable, type Column, type Row } from '@/components/DataTable';
 import { RefreshButton } from '@/components/RefreshButton';
 import { UrlSidePanel } from '@/components/SidePanel';
 import { TopicStatusForm } from '@/components/TopicStatusForm';
-import { DemoLabel, ErrorCard, PageHeader, PriorityBadge } from '@/components/ui';
+import { ErrorCard, PageHeader, PriorityBadge } from '@/components/ui';
 
 export default async function Priorytety({ params, searchParams }: {
   params: Promise<{ lang: string }>; searchParams: Promise<SearchParams>;
@@ -102,7 +102,6 @@ async function TopicDetails({ d }: { d: TematSzczegoly }) {
       <div className="flex flex-wrap items-center gap-2">
         <PriorityBadge p={d.priorytet} long />
         <span className="chip chip-neutral tnum">{t('score', { value: fmtNumber(l, d.wynik, 1) })}</span>
-        <DemoLabel show={d.demo} />
       </div>
       <dl className="mt-4 grid grid-cols-[minmax(8rem,auto)_1fr] gap-x-4 gap-y-2">
         <dt className="muted">{t('place')}</dt><dd>{d.miejsce}{d.dzielnica ? `, ${d.dzielnica}` : ''}</dd>
@@ -158,7 +157,6 @@ async function TopicDetails({ d }: { d: TematSzczegoly }) {
                   {b.jezyk ? ` · ${b.jezyk.toUpperCase()}` : ''} · {fmtDate(l, b.utworzono)}
                 </p>
               </div>
-              <DemoLabel show={b.demo} />
             </li>
           ))}
         </ul>

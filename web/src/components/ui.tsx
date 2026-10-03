@@ -55,12 +55,6 @@ export function Panel({ title, sub, action, children, className = '', pad = true
   );
 }
 
-export function DemoLabel({ show = true }: { show?: boolean }) {
-  const t = useTranslations('common');
-  if (!show) return null;
-  return <Chip tone="demo" label={t('demo')} title={t('demoHint')} />;
-}
-
 export function PriorityBadge({ p, long = false }: { p: Priorytet; long?: boolean }) {
   const t = useTranslations('priority');
   return <Chip tone={PRIORITY_TONE[p]} label={long ? t(p) : p} />;

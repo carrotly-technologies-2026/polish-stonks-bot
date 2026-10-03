@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { DemoLabel, PriorityBadge, StatusBadge } from './ui';
+import { PriorityBadge, StatusBadge } from './ui';
 import { label } from '@/lib/labels';
 import type { Priorytet } from '@/lib/types';
 
@@ -26,7 +26,6 @@ export function TopicRow({ topic, href, compact = false }: { topic: TopicRowData
         </p>
       </div>
       {!compact && <StatusBadge status={topic.status} />}
-      {!compact && <DemoLabel show={!!topic.demo} />}
       {href && <ChevronRight size={18} className="muted shrink-0" aria-hidden />}
     </>
   );
