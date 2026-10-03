@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode } from 'react';
 import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { ExternalLink, FlaskConical, LibraryBig, Search } from 'lucide-react';
+import { ArrowLeft, ExternalLink, FlaskConical, LibraryBig, Search } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ROPS_LINKS } from '@/lib/rops';
@@ -36,7 +36,7 @@ export default async function RopsLayout({ children, params }: { children: React
             </span>
           </Link>
           <nav aria-label={t('navLabel')} className="flex flex-wrap gap-1">
-            <Link href={base} className="btn btn-text">{t('navHome')}</Link>
+            <Link href={base} className="btn btn-text"><ArrowLeft size={16} aria-hidden />{t('embed.backToDemo')}</Link>
             <Link href={`${base}/szukaj`} className="btn btn-text"><Search size={16} aria-hidden />{t('navSearch')}</Link>
           </nav>
           <Suspense fallback={null}><LanguageSwitcher /></Suspense>
@@ -73,6 +73,7 @@ export default async function RopsLayout({ children, params }: { children: React
             <div>
               <p className="label pb-2 uppercase">{t('footerProject')}</p>
               <ul className="flex flex-col gap-1">
+                <li><Link href={base}>{t('embed.backToDemo')}</Link></li>
                 <li><Link href={`${base}/szukaj`}>{t('navSearch')}</Link></li>
                 <li><Link href={`/${lang}/info`}>{t('footerMayai')}</Link></li>
                 <li><Link href={`/${lang}/panel`}>{t('footerPanel')}</Link></li>
