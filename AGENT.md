@@ -29,9 +29,10 @@ Wartości są w Coolify → hackyeah-2026 → universal-backend → Environment 
 
 ```
 dzwoni ktoś ──► 1. POST /halohub/webhooks/elevenlabs/init   (start połączenia, przed pierwszą wypowiedzią)
-                    ◄── dynamic_variables: czy_powrot, poprzedni_kontekst
-w rozmowie  ──► 2. POST /halohub/tools/szukaj_wiedzy         (za każdym razem, gdy pada pytanie o pomoc / rozwiązanie)
-                    ◄── do 3 wyników do przeczytania
+                    ◄── dynamic_variables: czy_powrot, poprzedni_kontekst (ostatnie 6 h z tego numeru)
+w rozmowie  ──► 2a. POST /halohub/tools/kontekst_rozmowy     (gdy agent oceni, że to NOWA sprawa → kontekst usunięty)
+            ──► 2b. POST /halohub/tools/znajdz_polaczenie    (jazda tramwajem/autobusem → linie i odjazdy z rozkładu ZTP)
+            ──► 2c. POST /halohub/tools/szukaj_wiedzy        (pytanie o pomoc / rozwiązanie → do 3 wyników)
 koniec      ──► 3. POST /halohub/webhooks/elevenlabs         (raz, po rozłączeniu, z transkrypcją i polami analizy)
                     ◄── 200 { ok: true, bariery: N }
 ```
@@ -117,6 +118,47 @@ method POST, URL jak wyżej, header `x-tool-secret` jako secret, body: `pytanie`
 `grupa` (string, enum jak wyżej), `jezyk` (string), `conversation_id` (dynamic variable
 `system__conversation_id`). Opis narzędzia: PLAN.md sekcja 7.3.
 
+### 2b. Połączenie tramwajem / autobusem – `znajdz_polaczenie`
+
+`POST https://hy26-api.rabbithole.carrotly.tech/halohub/tools/znajdz_polaczenie`, nagłówek `x-tool-secret`.
+
+```json
+{ "skad": "Dworzec Główny", "dokad": "TAURON Arena", "kiedy": "15:30" }
+```
+
+`kiedy` opcjonalne (GG:MM, domyślnie teraz). Odpowiedź – do 3 połączeń z rozkładu ZTP Kraków (GTFS, odświeżany
+co 12 h), bez lub z jedną przesiadką, odjazdy w ciągu 90 min:
+
+```json
+{
+  "skad": ["Dworzec Główny Tunel", "Dworzec Główny Zachód", "Dworzec Główny Wschód"],
+  "dokad": ["TAURON Arena Kraków", "TAURON Arena Kraków Al. Pokoju", "TAURON Arena Kraków Wieczysta"],
+  "polaczenia": [{
+    "odjazd": "17:57", "przyjazd": "18:04", "za_min": 6, "czas_min": 7, "przesiadki": 0,
+    "odcinki": [{ "linia": "15", "rodzaj": "tramwaj", "kierunek": "Os.Piastów", "z": "Dworzec Główny Tunel",
+                  "z_slupek": "01", "odjazd": "17:57", "do": "TAURON Arena Kraków Wieczysta", "przyjazd": "18:04", "przystankow": 4 }],
+    "opis": "Z przystanku Dworzec Główny Tunel tramwaj linii 15 w kierunku Os.Piastów, odjazd o 17:57. Jedzie się 4 przystanki, …"
+  }],
+  "nastepne_odjazdy": ["18:17", "18:37"],
+  "komunikat": null,
+  "zrodlo": "rozkład jazdy ZTP Kraków"
+}
+```
+
+Nieznany przystanek → `polaczenia: []`, `komunikat` + `podpowiedzi` (nazwy do dopytania). Publicznie to samo:
+`GET /transit/plan?skad=…&dokad=…`, wyszukiwarka przystanków `GET /transit/stops?q=…`, stan `GET /transit`.
+
+### 2a. Kontynuacja czy nowa sprawa – `kontekst_rozmowy`
+
+Agent nie pyta – ocenia z wypowiedzi i `poprzedni_kontekst`. Gdy to nowa sprawa, woła w tle:
+
+```json
+{ "decyzja": "nowa_sprawa", "caller_id": "{{system__caller_id}}", "conversation_id": "{{system__conversation_id}}" }
+```
+
+→ `{ "ok": true, "decyzja": "nowa_sprawa", "kontekst_usuniety": true }`. Pole analizy `kontynuacja` (boolean)
+mówi backendowi po rozmowie, czy liczyć ją jako ponowny telefon (`czy_powrot`).
+
 ### 3. Po rozmowie – webhook z wynikami
 
 ElevenLabs wysyła go sam (Settings → Webhooks → Post-call, typ *transcription*,
@@ -148,6 +190,7 @@ Podpis starszy niż 30 min jest odrzucany (401). Payload – backend czyta te po
         "czy_dotarl": { "value": true },
         "kontekst_podsumowanie": { "value": "Jedzie z Dworca na HackYeah na wózku, omija schody." },
         "ostatni_krok": { "value": "przystanek Rondo Mogilskie" },
+        "kontynuacja": { "value": true },
         "potrzeby_json": { "value": "[{\"temat\":\"wypożyczalnia wózków\",\"grupa\":\"wozek\",\"czy_znaleziono\":false}]" }
       }
     }
@@ -156,7 +199,13 @@ Podpis starszy niż 30 min jest odrzucany (401). Payload – backend czyta te po
 ```
 
 Pola analizy (Agent → Analysis → Data collection) muszą się nazywać **dokładnie** jak wyżej – opisy dla
-LLM są w PLAN.md sekcja 5. Kategorie barier spoza listy trafiają do `INNE`, `powaga` spoza 1–3 → 1.
+LLM są w `agent/sync.mjs` (PLAN.md sekcja 5 + `kontynuacja`).
+
+## Agent jako kod
+
+`agent/prompt.md` (prompt systemowy) i `agent/sync.mjs` (narzędzia, pola analizy, webhooki, ustawienia głosu)
+to źródło prawdy. Zmiana → `ELEVENLABS_API_KEY=… HALOHUB_TOOL_SECRET=… HALOHUB_INIT_SECRET=… node agent/sync.mjs`
+(tworzy albo aktualizuje agenta, niczego nie dubluje). Podgląd bez wysyłania: `node agent/sync.mjs --dry-run`. Kategorie barier spoza listy trafiają do `INNE`, `powaga` spoza 1–3 → 1.
 Numer telefonu zapisujemy tylko jako solony hash. Ponowne wysłanie tego samego `conversation_id`
 nadpisuje rozmowę (bez duplikatów), więc retry są bezpieczne. Inne typy zdarzeń (np. audio) dostają
 `200 { ignored: true }`.
