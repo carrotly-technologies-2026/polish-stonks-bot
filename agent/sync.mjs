@@ -21,6 +21,9 @@ const NAME = 'Halo, Hub!';
 const TOOL_NAME = 'szukaj_wiedzy';
 const TRANSIT_TOOL = 'znajdz_polaczenie';
 const CONTEXT_TOOL = 'kontekst_rozmowy';
+const PLACES_TOOL = 'polec_miejsca';
+const PLACE_KINDS = ['restauracja', 'kawiarnia', 'bar', 'szybkie_jedzenie', 'lody', 'atrakcja', 'muzeum', 'park', 'punkt_widokowy',
+  'toaleta', 'apteka', 'bankomat', 'kantor', 'informacja_turystyczna', 'sklep_spozywczy', 'wycieczka'];
 const WEBHOOK_NAME = 'Halo, Hub! post-call';
 
 // "Arleta – Calm Instructor & Clear Voice" (native Polish, ElevenLabs voice library):
@@ -31,9 +34,9 @@ const GRUPY = ['senior', 'wozek', 'chodzik', 'wozek_dzieciecy', 'bagaz', 'obcokr
 const KATEGORIE = 'BARIERA_FIZYCZNA, AWARIA, OZNAKOWANIE, KOMUNIKACJA_MIEJSKA, JEZYK, INFORMACJA, ODPOCZYNEK_I_TOALETY, BEZPIECZENSTWO, ORIENTACJA, INNE';
 
 const FIRST_MESSAGE = {
-  pl: 'Dzień dobry, tu Halo, Hub! Pomogę dotrzeć w Krakowie i znaleźć pomoc. W czym mogę pomóc?',
-  uk: 'Добрий день, це Halo, Hub! Допоможу дістатися куди потрібно в Кракові та знайти допомогу. Чим можу допомогти?',
-  en: 'Hello, this is Halo, Hub! I can help you get around Kraków and find support. How can I help?',
+  pl: 'Dzień dobry, tu MayAI z Halo, Hub! Pomogę w Krakowie: dojazd, co zobaczyć, gdzie zjeść, gdzie szukać pomocy. W czym mogę pomóc?',
+  uk: 'Добрий день, це MayAI з Halo, Hub! Допоможу в Кракові: як дістатися, що подивитися, де поїсти, де знайти допомогу. Чим можу допомогти?',
+  en: 'Hello, this is MayAI from Halo, Hub! I can help you in Kraków: getting around, what to see, where to eat, where to find help. How can I help?',
 };
 
 // PLAN.md section 5: what the LLM extracts after each call (names must match the backend).
@@ -124,6 +127,35 @@ function transitToolConfig(toolSecretId) {
           kiedy: { type: 'string', description: 'Opcjonalnie godzina odjazdu GG:MM, gdy rozmówca jedzie później. Domyślnie teraz.' },
         },
         required: ['skad', 'dokad'],
+      },
+    },
+  };
+}
+
+function placesToolConfig(toolSecretId) {
+  return {
+    type: 'webhook',
+    name: PLACES_TOOL,
+    description:
+      'Szuka miejsc w Krakowie w pobliżu przystanku lub znanego miejsca: restauracje, kawiarnie, bary, atrakcje, muzea, parki, ' +
+      'punkty widokowe, toalety, apteki, bankomaty, kantory, informacja turystyczna, sklepy; także wycieczki (Viator). ' +
+      'Dane z OpenStreetMap, oceny z Tripadvisora (jeśli dostępne). Zwraca do 3 miejsc z odległością, godzinami, dostępnością ' +
+      'dla wózka, oceną i najbliższym przystankiem.',
+    response_timeout_secs: 20,
+    api_schema: {
+      url: `${BACKEND}/halohub/tools/polec_miejsca`,
+      method: 'POST',
+      request_headers: secretHeader(toolSecretId),
+      request_body_schema: {
+        type: 'object',
+        description: 'Czego i gdzie szukać.',
+        properties: {
+          kategoria: { type: 'string', enum: PLACE_KINDS, description: 'Rodzaj miejsca.' },
+          gdzie: { type: 'string', description: 'Przystanek lub znane miejsce (np. "Rynek Główny", "Plac Wolnica"). Domyślnie Rynek Główny.' },
+          kuchnia: { type: 'string', description: 'Opcjonalnie rodzaj kuchni (polska, włoska, wegańska…) albo temat wycieczki.' },
+          dla_wozka: { type: 'boolean', description: 'true, gdy potrzebne miejsce dostępne dla wózka.' },
+        },
+        required: ['kategoria'],
       },
     },
   };
@@ -317,7 +349,7 @@ async function findAgent() {
 async function main() {
   if (DRY) {
     console.log(JSON.stringify({
-      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>')],
+      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>'), placesToolConfig('<secret_id>')],
       agent: agentBody({ toolIds: ['<tool_ids>'], webhookId: '<webhook_id>', initSecret: '<HALOHUB_INIT_SECRET>' }),
     }, null, 2));
     return;
@@ -330,6 +362,7 @@ async function main() {
     await ensureTool(toolConfig(toolSecretId)),
     await ensureTool(transitToolConfig(toolSecretId)),
     await ensureTool(contextToolConfig(toolSecretId)),
+    await ensureTool(placesToolConfig(toolSecretId)),
   ];
   const webhookId = await ensureWebhook();
   const knowledge = await ensureKnowledge();
