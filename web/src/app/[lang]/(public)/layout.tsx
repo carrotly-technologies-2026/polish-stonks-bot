@@ -1,0 +1,24 @@
+import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { TopBar } from '@/components/TopBar';
+
+export default async function PublicLayout({ children, params }: {
+  children: ReactNode; params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  setRequestLocale(lang);
+  const t = await getTranslations('nav');
+  return (
+    <>
+      <TopBar homeHref={`/${lang}`}>
+        <nav aria-label={t('main')}>
+          <Link href={`/${lang}/raport`} className="btn btn-text">
+            {t('report')}
+          </Link>
+        </nav>
+      </TopBar>
+      <main id="main" className="mx-auto max-w-[72rem] px-4 pt-6 pb-16 md:px-6">{children}</main>
+    </>
+  );
+}
