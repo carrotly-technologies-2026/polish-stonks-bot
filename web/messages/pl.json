@@ -196,6 +196,7 @@
     "reports": "{count, plural, one {# zgłoszenie} few {# zgłoszenia} many {# zgłoszeń} other {# zgłoszenia}}",
     "people": "{count, plural, one {# osoba} few {# osoby} many {# osób} other {# osoby}}",
     "trend": "Trend 7 dni: ×{value}",
+    "trendCapped": "(do wyniku wchodzi maks. ×2)",
     "open": "Szczegóły tematu {title}",
     "breakdown": "Skąd ten wynik",
     "barriers": "Zgłoszenia",

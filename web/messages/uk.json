@@ -196,6 +196,7 @@
     "reports": "{count, plural, one {# повідомлення} few {# повідомлення} many {# повідомлень} other {# повідомлення}}",
     "people": "{count, plural, one {# особа} few {# особи} many {# осіб} other {# особи}}",
     "trend": "Тренд за 7 днів: ×{value}",
+    "trendCapped": "(у результаті враховано макс. ×2)",
     "open": "Подробиці теми {title}",
     "breakdown": "Звідки цей бал",
     "barriers": "Повідомлення",
