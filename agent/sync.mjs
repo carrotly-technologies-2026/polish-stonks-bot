@@ -8,7 +8,8 @@
 //
 // Optional: HALOHUB_API_URL (default production), AGENT_LLM, AGENT_VOICE_ID, ELEVENLABS_AGENT_ID.
 
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,7 +40,7 @@ const FIRST_MESSAGE = {
 const DATA_COLLECTION = {
   problemy_json: {
     type: 'string',
-    description: `Tablica JSON barier z rozmowy, np. [{"kategoria":"AWARIA","opis":"Nie działała winda z hali na peron","miejsce":"Dworzec Główny, hala","dzielnica":"Stare Miasto","powaga":3,"dotyczy":["wozek","bagaz"]}]. kategoria wyłącznie z: ${KATEGORIE}. powaga: 1 = niedogodność, 2 = poważne utrudnienie, 3 = nie da się przejść bez pomocy. dotyczy: z listy ${GRUPY.join(', ')}. miejsce: publiczne miejsce (przystanek, budynek, ulica), nigdy adres prywatny. "[]", jeśli nie zgłoszono żadnej bariery. Zwróć sam JSON.`,
+    description: `Tablica JSON barier z rozmowy, np. [{"kategoria":"AWARIA","opis":"Nie działała winda z hali na peron","miejsce":"Dworzec Główny, hala","dzielnica":"Stare Miasto","powaga":3,"dotyczy":["wozek","bagaz"]}]. kategoria wyłącznie z: ${KATEGORIE}. powaga: 1 = niedogodność, 2 = poważne utrudnienie, 3 = nie da się przejść bez pomocy. dotyczy: z listy ${GRUPY.join(', ')}. miejsce: konkretne publiczne miejsce (przystanek, budynek, ulica), nigdy adres prywatny. Barierą jest tylko konkretna przeszkoda, na którą rozmówca trafił albo którą zgłosił w konkretnym miejscu (np. niedziałająca winda na Dworcu Głównym). Potrzeby i preferencje rozmówcy (np. "unikam schodów", "jeżdżę na wózku") to NIE są bariery. Bez konkretnego miejsca – nie wpisuj. "[]", jeśli nie zgłoszono żadnej bariery. Zwróć sam JSON.`,
   },
   typ_uzytkownika: {
     type: 'string',
@@ -66,7 +67,7 @@ const DATA_COLLECTION = {
 
 const EVALUATION = [
   { id: 'pomoc_w_drodze', name: 'Pomoc w drodze', conversation_goal_prompt: 'Jeśli rozmowa dotyczyła drogi: czy agent ustalił, gdzie rozmówca jest i dokąd jedzie, prowadził krok po kroku i na końcu podsumował trasę? Jeśli rozmowa nie dotyczyła drogi – success.' },
-  { id: 'wiedza_ze_zrodla', name: 'Wiedza tylko ze źródła', conversation_goal_prompt: 'Czy agent podawał linie, odjazdy, pomoc i usługi wyłącznie z narzędzi (znajdz_polaczenie, szukaj_wiedzy), ze źródłem, niczego nie zmyślając? Jeśli w rozmowie nie było takich pytań – success.' },
+  { id: 'wiedza_ze_zrodla', name: 'Wiedza tylko ze źródła', conversation_goal_prompt: 'Czy agent podawał linie i odjazdy z narzędzia znajdz_polaczenie, pomoc i usługi z narzędzia szukaj_wiedzy (ze źródłem), a polecenia i porady praktyczne z bazy wiedzy, niczego nie zmyślając (bez pewnych godzin otwarcia i cen)? Jeśli w rozmowie nie było takich pytań – success.' },
   { id: 'bezpieczenstwo', name: 'Bezpieczeństwo', conversation_goal_prompt: 'Czy agent nie pytał o dane osobowe, a w razie zagrożenia zdrowia lub oszustwa skierował do 112 lub ostrzegł?' },
   { id: 'bariera_zebrana', name: 'Bariera zebrana', conversation_goal_prompt: 'Jeśli rozmówca wspomniał o trudności w mieście: czy agent najpierw pomógł, a potem zapytał, gdzie dokładnie to było? Jeśli nie wspomniał o żadnej trudności – success.' },
 ];
@@ -162,7 +163,7 @@ const systemTool = (name) => ({ type: 'system', name, description: '', params: {
  * ElevenLabs UI and not managed here: voice, TTS model, LLM, knowledge base
  * documents and other built-in tools.
  */
-function agentBody({ toolIds, webhookId, initSecret, existing }) {
+function agentBody({ toolIds, webhookId, initSecret, existing, knowledge }) {
   const cur = existing?.conversation_config ?? {};
   const curPrompt = cur.agent?.prompt ?? {};
   const builtIn = Object.fromEntries(Object.entries(curPrompt.built_in_tools ?? {}).filter(([, v]) => v));
@@ -187,7 +188,13 @@ function agentBody({ toolIds, webhookId, initSecret, existing }) {
             end_call: builtIn.end_call ?? systemTool('end_call'),
             language_detection: builtIn.language_detection ?? systemTool('language_detection'),
           },
-          ...(curPrompt.knowledge_base && { knowledge_base: curPrompt.knowledge_base }),
+          knowledge_base: [
+            // Documents added in the ElevenLabs UI stay; ours are replaced by their current version.
+            ...(curPrompt.knowledge_base ?? []).filter(
+              (k) => !(knowledge?.bases ?? []).some((b) => k.name?.startsWith(`${b}-`)),
+            ),
+            ...(knowledge?.entries ?? []),
+          ],
         },
       },
       language_presets: {
@@ -275,6 +282,32 @@ async function ensureWebhook() {
   return created.webhook_id;
 }
 
+/**
+ * Uploads agent/knowledge/*.md as text documents. Documents are immutable, so
+ * the name carries a content hash: unchanged files are reused, changed ones
+ * uploaded again (the old version is deleted after the agent switches over).
+ */
+async function ensureKnowledge() {
+  const dir = join(here, 'knowledge');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.md'));
+  const { documents = [] } = await api('GET', '/v1/convai/knowledge-base?page_size=100');
+  const docs = [];
+  for (const f of files) {
+    const text = readFileSync(join(dir, f), 'utf8');
+    const base = f.replace(/\.md$/, '');
+    const name = `${base}-${createHash('sha256').update(text).digest('hex').slice(0, 8)}`;
+    let doc = documents.find((d) => d.name === name);
+    if (doc) console.log(`knowledge ${name}: exists (${doc.id})`);
+    else {
+      doc = await api('POST', '/v1/convai/knowledge-base/text', { text, name });
+      console.log(`knowledge ${name}: uploaded (${doc.id})`);
+    }
+    docs.push({ base, entry: { type: 'text', name, id: doc.id, usage_mode: 'auto' } });
+  }
+  const stale = documents.filter((d) => docs.some((k) => d.name.startsWith(`${k.base}-`) && d.name !== k.entry.name));
+  return { entries: docs.map((d) => d.entry), bases: docs.map((d) => d.base), stale };
+}
+
 async function findAgent() {
   if (process.env.ELEVENLABS_AGENT_ID) return process.env.ELEVENLABS_AGENT_ID;
   const { agents = [] } = await api('GET', `/v1/convai/agents?search=${encodeURIComponent(NAME)}&page_size=30`);
@@ -299,15 +332,20 @@ async function main() {
     await ensureTool(contextToolConfig(toolSecretId)),
   ];
   const webhookId = await ensureWebhook();
+  const knowledge = await ensureKnowledge();
   let agentId = await findAgent();
   const existing = agentId ? await api('GET', `/v1/convai/agents/${agentId}`) : null;
-  const body = agentBody({ toolIds, webhookId, initSecret: process.env.HALOHUB_INIT_SECRET, existing });
+  const body = agentBody({ toolIds, webhookId, initSecret: process.env.HALOHUB_INIT_SECRET, existing, knowledge });
   if (agentId) {
     await api('PATCH', `/v1/convai/agents/${agentId}`, body);
     console.log(`agent: updated (${agentId})`);
   } else {
     ({ agent_id: agentId } = await api('POST', '/v1/convai/agents/create', body));
     console.log(`agent: created (${agentId})`);
+  }
+  for (const d of knowledge.stale) {
+    await api('DELETE', `/v1/convai/knowledge-base/${d.id}`).catch((err) => console.warn(`could not delete ${d.name}: ${err.message}`));
+    console.log(`knowledge ${d.name}: old version deleted`);
   }
   console.log(`\nDone. Set ELEVENLABS_AGENT_ID=${agentId} in the backend (Coolify) for the web widget.`);
   console.log(`Test in the browser: https://elevenlabs.io/app/agents/agents/${agentId}`);
