@@ -20,8 +20,10 @@ export function useCategoryLabel() {
 }
 
 /** One ROPS source: title, source / category badges, summary, open + download buttons. */
-export function SourceCard({ w, nr, anchorId, terms = [], showFragment = false, headingLevel = 3 }: {
+export function SourceCard({ w, nr, anchorId, terms = [], showFragment = false, headingLevel = 3, compact = false }: {
   w: WynikRops; nr?: number; anchorId?: string; terms?: string[]; showFragment?: boolean; headingLevel?: 3 | 4;
+  /** Chat widget variant: title, source badge and buttons only. */
+  compact?: boolean;
 }) {
   const t = useTranslations('rops');
   const cat = useCategoryLabel();
@@ -29,25 +31,25 @@ export function SourceCard({ w, nr, anchorId, terms = [], showFragment = false, 
   const title = prettyTitle(w.tytul);
   const H = headingLevel === 3 ? 'h3' : 'h4';
   const src = t.has(`src.${w.zrodlo}`) ? t(`src.${w.zrodlo}`) : w.zrodlo_nazwa;
-  const summary = clip(w.streszczenie, 320);
+  const summary = compact ? '' : clip(w.streszczenie, 320);
   const fragment = showFragment && w.fragment && w.fragment !== w.streszczenie ? clip(w.fragment, 360) : '';
   return (
-    <article id={anchorId} className="source-card panel flex min-w-0 flex-col gap-2 p-4" aria-label={nr ? t('sourceN', { n: nr, title }) : title}>
+    <article id={anchorId} className={`source-card panel flex min-w-0 flex-col ${compact ? 'gap-1.5 p-3' : 'gap-2 p-4'}`} aria-label={nr ? t('sourceN', { n: nr, title }) : title}>
       <div className="flex flex-wrap items-center gap-2">
         {nr !== undefined && (
           <span className="tnum grid size-6 shrink-0 place-items-center rounded-full bg-[var(--primary)] text-[0.75rem] font-medium text-[var(--on-primary)]" aria-hidden>{nr}</span>
         )}
         <span className="chip chip-info"><Icon size={14} aria-hidden />{src}</span>
-        {w.kategoria && <span className="chip chip-neutral"><Tag size={14} aria-hidden />{cat(w.kategoria)}</span>}
+        {w.kategoria && !compact && <span className="chip chip-neutral"><Tag size={14} aria-hidden />{cat(w.kategoria)}</span>}
       </div>
-      <H className="title break-words"><Highlight text={title} terms={terms} /></H>
+      <H className={compact ? 'break-words text-[0.875rem] leading-[1.25rem] font-medium' : 'title break-words'}><Highlight text={title} terms={terms} /></H>
       {summary && <p className="muted break-words"><Highlight text={summary} terms={terms} /></p>}
       {fragment && (
         <blockquote className="small break-words border-l-4 border-[var(--outline)] pl-3 !text-[0.8125rem] !leading-[1.25rem]">
           <span className="sr-only">{t('fragment')}: </span>…<Highlight text={fragment} terms={terms} />
         </blockquote>
       )}
-      {w.kontakt && <p className="small break-words">{clip(w.kontakt, 200)}</p>}
+      {w.kontakt && !compact && <p className="small break-words">{clip(w.kontakt, 200)}</p>}
       <div className="mt-1 flex flex-wrap gap-2">
         <a href={w.url} target="_blank" rel="noopener noreferrer" className="btn btn-outline !min-h-9 !px-3">
           <ExternalLink size={16} aria-hidden />{t('openSource')}<span className="sr-only"> – {title} ({t('newTab')})</span>

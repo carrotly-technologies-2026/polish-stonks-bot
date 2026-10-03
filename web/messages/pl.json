@@ -704,6 +704,38 @@
     "pagination": "Strony wyników",
     "prev": "Poprzednie",
     "next": "Następne",
-    "page": "Strona {n}"
+    "page": "Strona {n}",
+    "widget": {
+      "title": "Asystent wiedzy ROPS",
+      "sub": "Odpowiedzi ze źródłami i plikami do pobrania",
+      "greeting": "Dzień dobry! Jestem asystentem wiedzy ROPS. Zapytaj o innowacje społeczne, raporty lub Mapę Wyzwań – odpowiem ze źródłami i plikami do pobrania.",
+      "c1": "Innowacje dla seniorów z demencją",
+      "c2": "Raport o usługach opiekuńczych w Małopolsce",
+      "c3": "Wsparcie dla cudzoziemców",
+      "c4": "Co to jest Mapa Wyzwań Społecznych?",
+      "open": "Otwórz czat z asystentem wiedzy ROPS",
+      "openUnread": "Otwórz czat z asystentem wiedzy ROPS – nowa wiadomość",
+      "minimize": "Zminimalizuj czat",
+      "full": "Pełny ekran / wyszukiwarka",
+      "voice": "Zapytaj głosem",
+      "voiceOff": "Wyłącz rozmowę głosową",
+      "voiceHint": "Rozmowa głosowa: kliknij przycisk MayAI, który pojawił się w rogu ekranu, i zezwól na mikrofon.",
+      "placeholder": "Zadaj pytanie…",
+      "hint": "Enter – wyślij, Shift + Enter – nowa linia. Nie podawaj danych osobowych.",
+      "phone": "Wolisz porozmawiać? Zadzwoń:"
+    },
+    "embed": {
+      "iframeTitle": "Podgląd strony rops.krakow.pl – Regionalny Ośrodek Polityki Społecznej w Krakowie",
+      "loading": "Wczytuję rops.krakow.pl…",
+      "fallbackTitle": "Nie udało się wyświetlić podglądu rops.krakow.pl",
+      "fallbackDesc": "Strona mogła zablokować osadzanie albo jest chwilowo niedostępna. Asystent w prawym dolnym rogu działa normalnie.",
+      "fallbackOpen": "Otwórz rops.krakow.pl",
+      "ribbonLabel": "Informacja o demo",
+      "ribbon": "Demo HackYeah 2026 · asystent osadzony na podglądzie rops.krakow.pl · nie jest oficjalną usługą ROPS",
+      "ribbonSearch": "Wyszukiwarka zaawansowana",
+      "ribbonInfo": "O projekcie",
+      "ribbonHide": "Ukryj informację o demo",
+      "backToDemo": "Wróć do demo"
+    }
   }
 }

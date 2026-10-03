@@ -704,6 +704,38 @@
     "pagination": "Result pages",
     "prev": "Previous",
     "next": "Next",
-    "page": "Page {n}"
+    "page": "Page {n}",
+    "widget": {
+      "title": "ROPS knowledge assistant",
+      "sub": "Answers with sources and downloadable files",
+      "greeting": "Hello! I am the ROPS knowledge assistant. Ask about social innovations, reports or the Social Challenges Map – I will answer with sources and files to download.",
+      "c1": "Innovations for seniors with dementia",
+      "c2": "Report on care services in Małopolska",
+      "c3": "Support for foreigners",
+      "c4": "What is the Social Challenges Map?",
+      "open": "Open chat with the ROPS knowledge assistant",
+      "openUnread": "Open chat with the ROPS knowledge assistant – new message",
+      "minimize": "Minimize chat",
+      "full": "Full screen / search",
+      "voice": "Ask by voice",
+      "voiceOff": "Turn off voice conversation",
+      "voiceHint": "Voice conversation: click the MayAI button that appeared in the corner of the screen and allow the microphone.",
+      "placeholder": "Ask a question…",
+      "hint": "Enter – send, Shift + Enter – new line. Do not share personal data.",
+      "phone": "Prefer to talk? Call:"
+    },
+    "embed": {
+      "iframeTitle": "Preview of rops.krakow.pl – Regional Social Policy Centre in Kraków",
+      "loading": "Loading rops.krakow.pl…",
+      "fallbackTitle": "The rops.krakow.pl preview could not be displayed",
+      "fallbackDesc": "The site may block embedding or be temporarily unavailable. The assistant in the bottom-right corner works as usual.",
+      "fallbackOpen": "Open rops.krakow.pl",
+      "ribbonLabel": "Demo notice",
+      "ribbon": "HackYeah 2026 demo · assistant embedded on a preview of rops.krakow.pl · not an official ROPS service",
+      "ribbonSearch": "Advanced search",
+      "ribbonInfo": "About the project",
+      "ribbonHide": "Hide demo notice",
+      "backToDemo": "Back to demo"
+    }
   }
 }
