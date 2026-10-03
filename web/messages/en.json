@@ -642,7 +642,7 @@
     "chat": {
       "title": "Chat with the assistant",
       "sub": "Answers from ROPS materials, with sources",
-      "clear": "Clear conversation",
+      "newChat": "New conversation",
       "log": "Conversation with the assistant",
       "empty": "Ask in your own words or pick an example. The assistant remembers the last few messages, so you can ask follow-up questions.",
       "examples": "Example questions",
@@ -669,17 +669,6 @@
       "err_failed": "Something went wrong on the way. Try again – if it keeps happening, use the search page.",
       "err_invalid_t": "I don’t understand the question",
       "err_invalid": "Type a question (max. 1000 characters) and try again."
-    },
-    "voice": {
-      "title": "Ask MayAI by voice",
-      "soon": "Coming soon in the browser",
-      "desc": "MayAI will search the ROPS materials and give you the sources – speak or type.",
-      "howTo": "Click the round microphone button in the corner of the screen and allow microphone access.",
-      "disabled": "Voice chat in the browser will be switched on once the MayAI agent is configured for this site. Until then, use the chat or call.",
-      "phoneLabel": "Or call",
-      "call": "Call MayAI",
-      "phoneNote": "The same number as the MayAI city guide – one assistant helps you get around Kraków and find ROPS materials. International call (Czech number), charged at your operator’s rates.",
-      "more": "More about MayAI"
     },
     "searchMetaTitle": "Search – ROPS knowledge assistant (prototype)",
     "searchTitle": "Search ROPS materials",
@@ -717,9 +706,6 @@
       "openUnread": "Open chat with the ROPS knowledge assistant – new message",
       "minimize": "Minimize chat",
       "full": "Full screen / search",
-      "voice": "Ask by voice",
-      "voiceOff": "Turn off voice conversation",
-      "voiceHint": "Voice conversation: click the MayAI button that appeared in the corner of the screen and allow the microphone.",
       "placeholder": "Ask a question…",
       "hint": "Enter – send, Shift + Enter – new line. Do not share personal data.",
       "phone": "Prefer to talk? Call:"

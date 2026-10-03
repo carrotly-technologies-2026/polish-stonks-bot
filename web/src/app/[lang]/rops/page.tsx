@@ -29,7 +29,7 @@ export default async function RopsEmbedDemo({ params, searchParams }: {
       <RopsFrame />
       <DemoRibbon lang={lang} />
       <RopsWidget key={pytanie ?? 'w'} lang={lang} initialQuestion={pytanie}
-        agentId={i?.elevenlabs_agent_id ?? null} phone={i?.numer ?? null} phoneTel={i?.numer_tel ?? null} />
+        phone={i?.numer ?? null} phoneTel={i?.numer_tel ?? null} />
     </>
   );
 }

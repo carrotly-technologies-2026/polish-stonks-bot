@@ -642,7 +642,7 @@
     "chat": {
       "title": "Czat z asystentem",
       "sub": "Odpowiedzi z materiałów ROPS, ze źródłami",
-      "clear": "Wyczyść rozmowę",
+      "newChat": "Nowa rozmowa",
       "log": "Rozmowa z asystentem",
       "empty": "Zadaj pytanie własnymi słowami albo wybierz przykład. Asystent pamięta kilka ostatnich wiadomości, więc możesz dopytywać.",
       "examples": "Przykładowe pytania",
@@ -669,17 +669,6 @@
       "err_failed": "Coś poszło nie tak po drodze. Spróbuj ponownie – jeśli problem się powtarza, skorzystaj z wyszukiwarki.",
       "err_invalid_t": "Nie rozumiem pytania",
       "err_invalid": "Wpisz pytanie (maks. 1000 znaków) i spróbuj ponownie."
-    },
-    "voice": {
-      "title": "Zapytaj głosem MayAI",
-      "soon": "Wkrótce w przeglądarce",
-      "desc": "MayAI przeszuka materiały ROPS i poda źródła – możesz mówić albo pisać.",
-      "howTo": "Kliknij okrągły przycisk z mikrofonem w rogu ekranu i zezwól na dostęp do mikrofonu.",
-      "disabled": "Rozmowa głosowa w przeglądarce zostanie włączona, gdy agent MayAI będzie skonfigurowany dla tej strony. Do tego czasu skorzystaj z czatu albo zadzwoń.",
-      "phoneLabel": "Albo zadzwoń",
-      "call": "Zadzwoń do MayAI",
-      "phoneNote": "To ten sam numer co przewodnika miejskiego MayAI – jedna asystentka pomaga w drodze po Krakowie i w materiałach ROPS. Połączenie międzynarodowe (numer czeski), płatne według taryfy operatora.",
-      "more": "Więcej o MayAI"
     },
     "searchMetaTitle": "Wyszukiwarka – Asystent wiedzy ROPS (prototyp)",
     "searchTitle": "Wyszukiwarka materiałów ROPS",
@@ -717,9 +706,6 @@
       "openUnread": "Otwórz czat z asystentem wiedzy ROPS – nowa wiadomość",
       "minimize": "Zminimalizuj czat",
       "full": "Pełny ekran / wyszukiwarka",
-      "voice": "Zapytaj głosem",
-      "voiceOff": "Wyłącz rozmowę głosową",
-      "voiceHint": "Rozmowa głosowa: kliknij przycisk MayAI, który pojawił się w rogu ekranu, i zezwól na mikrofon.",
       "placeholder": "Zadaj pytanie…",
       "hint": "Enter – wyślij, Shift + Enter – nowa linia. Nie podawaj danych osobowych.",
       "phone": "Wolisz porozmawiać? Zadzwoń:"

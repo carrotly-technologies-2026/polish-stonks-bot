@@ -25,7 +25,7 @@ Production build: `npm run build && npm start` (port 3100 locally; Docker uses `
 
 - Public: `/[lang]` (hero, `tel:` number, ElevenLabs widget when `elevenlabs_agent_id` is set, key numbers),
   `/[lang]/raport` (latest publication, `?id=` for archive), `/api/open-data/{metryki,tematy}.{csv,json}` (proxy).
-- ROPS knowledge assistant (prototype): `/[lang]/rops` (chat line with cited answers + MayAI voice line),
+- ROPS knowledge assistant (prototype): `/[lang]/rops` (chat line with cited answers + MayAI phone number),
   `/[lang]/rops/szukaj` (advanced search, state in the URL). Proxies: `/api/rops/{zapytaj,szukaj,facety}` →
   `/halohub/public/rops/*` (client IP forwarded; 404 from the backend shows "asystent jest aktualizowany").
 - Panel: `/[lang]/panel` (overview), `/priorytety`, `/jezyki`, `/wiedza`, `/publikacje`.
