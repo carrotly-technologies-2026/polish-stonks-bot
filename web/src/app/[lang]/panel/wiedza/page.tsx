@@ -3,8 +3,6 @@ import { panelApi } from '@/lib/api';
 import { readFilters, type SearchParams } from '@/lib/filters';
 import { fmtDate, fmtNumber, fmtPercent } from '@/lib/format';
 import { label } from '@/lib/labels';
-import { jobAction } from '@/app/actions';
-import { ActionButton } from '@/components/ActionButton';
 import { Chip, RUN_TONE } from '@/components/Chip';
 import { DataTable, type Row } from '@/components/DataTable';
 import { MetricTile } from '@/components/MetricTile';
@@ -30,7 +28,6 @@ export default async function Wiedza({ params, searchParams }: {
       <PageHeader title={t('title')} lead={t('lead')}
         crumbs={[{ label: tn('section_pipeline') }, { label: t('title') }]}
         actions={<>
-          <ActionButton action={jobAction} fields={{ job: 'ingest' }} variant="primary" successText={t('ingestStarted')}>{t('runIngest')}</ActionButton>
           <RefreshButton />
         </>} />
       {!res.ok ? <ErrorCard error={res.error} /> : (() => {

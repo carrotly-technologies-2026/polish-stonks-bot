@@ -16,7 +16,9 @@ import { ErrorCard, PageHeader, Panel } from '@/components/ui';
 const ICONS: Record<EtapId, LucideIcon> = {
   ingest: CloudDownload, embedding: Binary, rozmowy: Phone, tematy: ListOrdered, raport: FileText, publikacja: Megaphone,
 };
-const JOB: Partial<Record<EtapId, 'ingest' | 'tematy' | 'raport-dzienny'>> = { ingest: 'ingest', tematy: 'tematy', raport: 'raport-dzienny' };
+// The RAG ingest is not started from the (public) panel: it restarts work that
+// takes a long time and is scheduled on the backend.
+const JOB: Partial<Record<EtapId, 'tematy' | 'raport-dzienny'>> = { tematy: 'tematy', raport: 'raport-dzienny' };
 const LINK: Partial<Record<EtapId, string>> = { embedding: '/wiedza', rozmowy: '/rozmowy', publikacja: '/publikacje' };
 const durationS = (a: string, b: string | null) => (b ? (Date.parse(b) - Date.parse(a)) / 1000 : null);
 
@@ -89,7 +91,7 @@ export default async function PipelinePage({ params, searchParams }: {
                       <div className="mt-auto pt-1">
                         {job ? (
                           <ActionButton action={jobAction} fields={{ job }} variant="tonal"
-                            successText={job === 'ingest' ? t('ingestStarted') : t('jobDone')}>{t('runNow')}</ActionButton>
+                            successText={t('jobDone')}>{t('runNow')}</ActionButton>
                         ) : link ? (
                           <Link href={`/${lang}/panel${link}${globalQuery(sp)}`} className="btn btn-text !px-2">{t('open')}</Link>
                         ) : null}
