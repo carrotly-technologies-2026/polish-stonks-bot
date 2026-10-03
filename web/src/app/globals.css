@@ -503,3 +503,36 @@ a.cite:hover {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary);
 }
+
+/* ROPS chat widget (embedded demo on /rops). */
+.source-card.cite-flash {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.rw-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 150ms var(--ease);
+}
+.rw-icon:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.rw-icon:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.rw-icon:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.rw-answer .prose-report {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
