@@ -29,7 +29,8 @@ Wartości są w Coolify → hackyeah-2026 → universal-backend → Environment 
 
 ```
 dzwoni ktoś ──► 1. POST /halohub/webhooks/elevenlabs/init   (start połączenia, przed pierwszą wypowiedzią)
-                    ◄── dynamic_variables: czy_powrot, poprzedni_kontekst (ostatnie 6 h z tego numeru)
+                    ◄── dynamic_variables: czy_powrot, poprzedni_kontekst (ostatnie 6 h z tego numeru), powitanie
+w rozmowie  ──► 2c. POST /halohub/tools/zapisz_postep         (po cichu: cel i ostatni krok – wznowienie po zerwanym połączeniu)
 w rozmowie  ──► 2a. POST /halohub/tools/kontekst_rozmowy     (gdy agent oceni, że to NOWA sprawa → kontekst usunięty)
             ──► 2b. POST /halohub/tools/znajdz_polaczenie    (jazda tramwajem/autobusem → linie i odjazdy z rozkładu ZTP)
             ──► 2c. POST /halohub/tools/szukaj_wiedzy        (pytanie o pomoc / rozwiązanie → do 3 wyników)
@@ -57,16 +58,20 @@ Odpowiedź (ElevenLabs wstawia to do zmiennych dynamicznych agenta):
   "type": "conversation_initiation_client_data",
   "dynamic_variables": {
     "czy_powrot": "tak",
-    "poprzedni_kontekst": "Jedzie z Dworca na HackYeah z walizką. Ostatni krok: przystanek Rondo Mogilskie."
+    "poprzedni_kontekst": "Rozmowa sprzed 3 min. Cel: HackYeah. Rozmówca: duży bagaż. Język poprzedniej rozmowy: pl. Jedzie z Dworca na HackYeah z walizką. Ostatni krok: przystanek Rondo Mogilskie.",
+    "powitanie": "Dzień dobry, tu znowu MayAI z Halo, Hub!. Słucham, w czym mogę pomóc?"
   }
 }
 ```
 
-Brak kontekstu → `czy_powrot: "nie"`, `poprzedni_kontekst: ""`. Odczyt ma limit 300 ms, więc nigdy nie blokuje rozmowy.
+Brak kontekstu → `czy_powrot: "nie"`, `poprzedni_kontekst: ""`, `powitanie` = pełne przedstawienie projektu.
+Pierwsza wiadomość agenta to `{{powitanie}}` (powracający słyszą krótkie powitanie w języku poprzedniej rozmowy).
+Odczyt ma limit 1,5 s (`CONTEXT_TIMEOUT_MS`), więc nigdy nie blokuje rozmowy.
 
 W ElevenLabs: Settings → *Conversation initiation client data webhook* = powyższy URL + nagłówek;
 w agencie: Security → włącz *Fetch conversation initiation data*; zmienne dynamiczne agenta
-`czy_powrot` (domyślnie `nie`) i `poprzedni_kontekst` (domyślnie pusty).
+`czy_powrot` (domyślnie `nie`), `poprzedni_kontekst` (domyślnie pusty) i `powitanie` (domyślnie pełne przedstawienie –
+dla widżetu, który nie woła webhooka).
 
 ### 2. W trakcie rozmowy – narzędzie `szukaj_wiedzy` (RAG)
 
@@ -158,6 +163,20 @@ Agent nie pyta – ocenia z wypowiedzi i `poprzedni_kontekst`. Gdy to nowa spraw
 
 → `{ "ok": true, "decyzja": "nowa_sprawa", "kontekst_usuniety": true }`. Pole analizy `kontynuacja` (boolean)
 mówi backendowi po rozmowie, czy liczyć ją jako ponowny telefon (`czy_powrot`).
+
+### 2c. Zapis postępu w trakcie rozmowy – `zapisz_postep`
+
+Webhook po rozmowie przychodzi z opóźnieniem (po analizie), a rozmówca po zerwanym połączeniu oddzwania od razu.
+Dlatego agent po cichu zapisuje postęp w trakcie rozmowy:
+
+```json
+{ "cel": "TAURON Arena", "ostatni_krok": "wsiadł do tramwaju 50 na Dworcu Głównym", "podsumowanie": "porusza się na wózku",
+  "caller_id": "{{system__caller_id}}", "conversation_id": "{{system__conversation_id}}" }
+```
+
+→ `{ "ok": true }`. `znajdz_polaczenie` (z `caller_id`) zapisuje zaplanowany przejazd sam. Backend scala dane z kontekstem:
+puste pola nic nie kasują; webhook po rozmowie przy kontynuacji uzupełnia kontekst, przy nowej sprawie go zastępuje,
+a spóźniony webhook starszej rozmowy tylko uzupełnia braki nowszej.
 
 ### 3. Po rozmowie – webhook z wynikami
 
