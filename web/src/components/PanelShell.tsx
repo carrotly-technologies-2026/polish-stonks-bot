@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, Gauge, Languages, ListOrdered, Megaphone, Menu, Phone, Workflow,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, ListOrdered, Lock,
+  LockOpen, Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
+import { ADMIN_UI_COOKIE } from '@/lib/auth';
 import { globalQuery } from '@/lib/filters';
 import { GlobalFilters } from './GlobalFilters';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -18,6 +20,26 @@ const SECTIONS = [
   { key: 'pipeline', items: [{ seg: '/pipeline', key: 'pipeline', Icon: Workflow }, { seg: '/wiedza', key: 'knowledge', Icon: BookOpen }] },
   { key: 'publishing', items: [{ seg: '/publikacje', key: 'publications', Icon: Megaphone }, { seg: '/otwarte-dane', key: 'openData', Icon: Database }] },
 ] as const;
+
+/** "Edit mode" switch: viewing is public, changes need the panel password. */
+function EditMode() {
+  const t = useTranslations('nav');
+  const pathname = usePathname();
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    setAdmin(document.cookie.split('; ').some((c) => c === `${ADMIN_UI_COOKIE}=1`));
+  }, []);
+  const next = encodeURIComponent(pathname);
+  return admin ? (
+    <a href={`/admin/logout?next=${next}`} className="btn btn-tonal !min-h-9" title={t('logout')}>
+      <LockOpen size={16} aria-hidden /> <span className="hidden sm:inline">{t('editMode')}</span>
+    </a>
+  ) : (
+    <a href={`/admin/login?next=${next}`} className="btn btn-outline !min-h-9">
+      <Lock size={16} aria-hidden /> <span className="hidden sm:inline">{t('login')}</span>
+    </a>
+  );
+}
 
 function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const t = useTranslations('nav');
@@ -44,10 +66,25 @@ function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
           </ul>
         </div>
       ))}
-      <Link href={`/${locale}`} className={`nav-item mt-2 ${collapsed ? 'justify-center !px-0' : ''}`} title={collapsed ? t('publicSite') : undefined}>
-        <ExternalLink size={20} strokeWidth={2} aria-hidden />
-        <span className={collapsed ? 'sr-only' : ''}>{t('publicSite')}</span>
-      </Link>
+      <div>
+        {!collapsed && <p className="label px-4 pb-1 uppercase">{t('section_links')}</p>}
+        <ul className="flex flex-col gap-0.5">
+          {[
+            { href: `/${locale}/raport`, key: 'publicReport', Icon: FileText },
+            { href: `/${locale}/info`, key: 'citizenPage', Icon: Info },
+            { href: '/api/open-data/metryki.csv', key: 'csvMetrics', Icon: FileSpreadsheet },
+            { href: '/api/open-data/tematy.csv', key: 'csvTopics', Icon: FileSpreadsheet },
+          ].map(({ href, key, Icon }) => (
+            <li key={key}>
+              <a href={href} className={`nav-item ${collapsed ? 'justify-center !px-0' : ''}`} title={collapsed ? t(key) : undefined}>
+                <Icon size={20} strokeWidth={2} aria-hidden />
+                <span className={collapsed ? 'sr-only' : ''}>{t(key)}</span>
+                {!collapsed && <ExternalLink size={14} className="ml-auto opacity-60" aria-hidden />}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 }
@@ -82,6 +119,7 @@ export function PanelShell({ children }: { children: ReactNode }) {
           <Suspense fallback={null}><GlobalFilters /></Suspense>
           <Suspense fallback={null}><LanguageSwitcher /></Suspense>
           <ThemeToggle />
+          <EditMode />
         </div>
       </header>
       <div className="flex">

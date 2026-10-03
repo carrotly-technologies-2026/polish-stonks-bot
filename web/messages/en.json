@@ -38,7 +38,7 @@
     "main": "Main navigation",
     "home": "Home",
     "report": "Report",
-    "panel": "City panel",
+    "panel": "Dashboard",
     "overview": "Overview",
     "priorities": "Priorities",
     "languages": "Languages",
@@ -53,7 +53,15 @@
     "section_publishing": "Publishing",
     "conversations": "Calls",
     "pipeline": "Pipeline",
-    "openData": "Open data"
+    "openData": "Open data",
+    "section_links": "Links",
+    "publicReport": "Public report",
+    "citizenPage": "For residents",
+    "csvMetrics": "Metrics (CSV)",
+    "csvTopics": "Topics (CSV)",
+    "login": "Sign in to edit",
+    "logout": "Sign out",
+    "editMode": "Edit mode · sign out"
   },
   "errors": {
     "backendTitle": "Couldn’t load the data",
@@ -294,7 +302,8 @@
     "viewPublic": "Open public site",
     "colPeriod": "Period",
     "colCreated": "Created",
-    "colTopics": "Topics"
+    "colTopics": "Topics",
+    "loginRequired": "Sign in to edit (button in the top right corner) to change data."
   },
   "categories": {
     "BARIERA_FIZYCZNA": "Physical barrier",

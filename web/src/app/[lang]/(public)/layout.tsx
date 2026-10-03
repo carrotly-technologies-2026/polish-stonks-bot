@@ -11,11 +11,11 @@ export default async function PublicLayout({ children, params }: {
   const t = await getTranslations('nav');
   return (
     <>
-      <TopBar homeHref={`/${lang}`}>
-        <nav aria-label={t('main')}>
-          <Link href={`/${lang}/raport`} className="btn btn-text">
-            {t('report')}
-          </Link>
+      <TopBar homeHref={`/${lang}/panel`}>
+        <nav aria-label={t('main')} className="flex flex-wrap gap-1">
+          <Link href={`/${lang}/panel`} className="btn btn-text">{t('panel')}</Link>
+          <Link href={`/${lang}/raport`} className="btn btn-text">{t('report')}</Link>
+          <Link href={`/${lang}/info`} className="btn btn-text">{t('citizenPage')}</Link>
         </nav>
       </TopBar>
       <main id="main" className="mx-auto max-w-[72rem] px-4 pt-6 pb-16 md:px-6">{children}</main>
