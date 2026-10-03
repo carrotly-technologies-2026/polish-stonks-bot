@@ -27,7 +27,7 @@ export async function publishAction(_: ActionState, form: FormData): Promise<Act
 
 export async function jobAction(_: ActionState, form: FormData): Promise<ActionState> {
   const job = String(form.get('job') ?? '');
-  if (job !== 'tematy' && job !== 'raport-dzienny' && job !== 'ingest') return { ok: false, message: 'invalid job' };
+  if (job !== 'tematy' && job !== 'raport-dzienny') return { ok: false, message: 'invalid job' };
   return done(await panelApi.job(job));
 }
 
