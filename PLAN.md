@@ -168,14 +168,60 @@ sequenceDiagram
 
 ---
 
-## 3. Twilio – konfiguracja
+## 3. Telefonia – konfiguracja
 
-1. Kup numer z obsługą Voice i SMS. **Polski numer +48 wymaga zatwierdzenia dokumentów
-   (regulatory bundle)**, co może trwać dłużej niż hackathon. Na demo weź numer dostępny od ręki.
-2. W ElevenLabs: Agent → Phone Numbers → Import z Twilio (Account SID + Auth Token).
-   ElevenLabs sam ustawia webhooki głosowe numeru, nie konfigurujesz TwiML ręcznie.
-3. SMS-y wysyła backend przez Twilio Messages API z tego samego numeru.
-4. Zapasowe wejście na demo: widget głosowy ElevenLabs na stronie publicznej (działa bez numeru).
+### 3.1 Numer przychodzący: +420 910 923 449
+
+Na demo bot odbiera połączenia na **+420 910 923 449** (czeski numer z zakresu 910, VoIP).
+Polski numer +48 wymaga zatwierdzenia dokumentów (regulatory bundle), co może trwać dłużej
+niż hackathon – dlatego teraz numer czeski, a +48 docelowo (sekcja 14).
+
+**Wariant A – numer jest w Twilio (Phone Numbers → Active numbers):**
+
+1. Sprawdź w Twilio, że numer ma włączone **Voice** (i SMS, jeśli Twilio go dla CZ oferuje).
+2. ElevenLabs → Agents → Phone Numbers → **Import number → From Twilio**:
+   - Label: `Halo, Hub! inbound CZ`
+   - Phone number: `+420910923449` (format E.164, bez spacji)
+   - Twilio Account SID i Auth Token
+3. Przypisz numer do agenta „Halo, Hub!” (pole **Agent** przy numerze, ruch przychodzący).
+   ElevenLabs sam ustawia webhook głosowy numeru w Twilio – nie konfiguruj TwiML ręcznie
+   i nie nadpisuj potem „A call comes in” w konsoli Twilio.
+4. Włącz dla agenta webhook inicjacji (sekcja 4), żeby `caller_id` trafiał do backendu.
+
+**Wariant B – numer jest u czeskiego operatora VoIP (poza Twilio):**
+
+1. ElevenLabs → Phone Numbers → **Import number → SIP trunk**: numer `+420910923449`,
+   transport TLS (albo TCP, jeśli operator nie wspiera TLS), szyfrowanie mediów zgodnie z operatorem.
+2. U operatora skieruj ruch przychodzący z numeru na adres SIP ElevenLabs podany przy imporcie
+   (np. `sip:+420910923449@<host-elevenlabs>`). Jeśli operator wymaga, dodaj adresy IP / host
+   ElevenLabs do listy dozwolonych.
+3. Upewnij się, że operator przekazuje numer dzwoniącego (CLIP) w nagłówku `From` –
+   bez tego nie zadziała kontekst z Redis (sekcja 8.4) ani SMS na numer rozmówcy.
+4. Przypisz numer do agenta jak w wariancie A.
+
+Dokładne pola formularza importu i adres SIP sprawdź w aktualnej dokumentacji ElevenLabs.
+
+**Test po konfiguracji (oba warianty):**
+
+1. Zadzwoń z polskiej komórki – bot wita się pierwszą wiadomością z sekcji 4.
+2. W ElevenLabs → Conversations sprawdź, że rozmowa ma `system__caller_id` z numerem dzwoniącego.
+3. Rozłącz się i zadzwoń ponownie w ciągu godziny – bot powinien kontynuować (Redis).
+4. Sprawdź, że po rozmowie w Supabase pojawił się wiersz w `rozmowy`.
+
+**Uwagi:**
+
+- Dla dzwoniących z Polski to **połączenie międzynarodowe** – płatne według taryfy rozmówcy,
+  a część taryf seniorskich go nie obejmuje. Na stronie publicznej pokazuj numer w formacie
+  `+420 910 923 449` z dopiskiem o kosztach. Docelowo numer +48 (najlepiej bezpłatny 800).
+- Numery z zakresu 910 zwykle **nie wysyłają SMS-ów**. SMS-y z backendu idą wtedy z osobnego
+  numeru lub nadawcy alfanumerycznego `HaloHub` w Twilio (`TWILIO_SMS_FROM`); polskie sieci
+  przyjmują nadawców alfanumerycznych.
+- Zapasowe wejście na demo: widget głosowy ElevenLabs na stronie publicznej (działa bez numeru).
+
+### 3.2 SMS
+
+SMS-y wysyła backend przez Twilio Messages API z `TWILIO_SMS_FROM` (numer lub nadawca
+alfanumeryczny, patrz wyżej).
 
 ---
 
@@ -802,7 +848,8 @@ return {                                              // krótko: każdy token t
 ```
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
+INBOUND_NUMBER=+420910923449    # numer bota (sekcja 3.1), pokazywany na stronie publicznej
+TWILIO_SMS_FROM=               # numer z SMS albo nadawca alfanumeryczny, np. HaloHub
 ELEVENLABS_WEBHOOK_SECRET=
 TOOL_SECRET=
 CRON_SECRET=
@@ -838,7 +885,7 @@ komponenty stylujemy według sekcji 9.3.
 
 | Ścieżka | Dla kogo | Zawartość |
 |---|---|---|
-| `/[lang]` | Publiczna | Hero „Kraków bez barier”, numer do bota (duży, klikalny), widget głosowy, 4 kluczowe liczby z ostatniej publikacji |
+| `/[lang]` | Publiczna | Hero „Kraków bez barier”, numer do bota `+420 910 923 449` (duży, klikalny `tel:`, z dopiskiem o koszcie połączenia z Polski), widget głosowy, 4 kluczowe liczby z ostatniej publikacji |
 | `/[lang]/raport` | Publiczna | Opublikowane metryki, tematy P1–P3, raport dnia, pobierz CSV/JSON, archiwum publikacji |
 | `/[lang]/panel` | Urzędnik | **Przegląd:** kafle metryk, trend 14 dni, nowe tematy P1 „na żywo” |
 | `/[lang]/panel/priorytety` | Urzędnik | Lista tematów posortowana po wyniku, filtry, zmiana statusu, rozbicie wyniku, dopasowane innowacje z RAG |
@@ -936,7 +983,7 @@ Metryki liczone są widokiem SQL `metryki_dzienne` (materializowany, odświeżan
 
 | Składnik | Jednostka | Uwagi |
 |---|---|---|
-| Numer Twilio | miesięcznie | numer +48 po zatwierdzeniu |
+| Numer przychodzący | miesięcznie | teraz +420 910 923 449, docelowo +48 / 800 po zatwierdzeniu |
 | Połączenia przychodzące Twilio | za minutę | |
 | SMS Twilio | za wiadomość | |
 | ElevenLabs Agents | za minutę rozmowy | zależnie od planu |
@@ -955,7 +1002,7 @@ Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmo
 
 | Czas | Fullstack | Designer |
 |---|---|---|
-| 0–1 h | Konta Twilio, ElevenLabs, Supabase; numer; import numeru do ElevenLabs | Nazwa, logo, paleta o wysokim kontraście |
+| 0–1 h | Konta Twilio, ElevenLabs, Supabase; import +420 910 923 449 do ElevenLabs i test połączenia (sekcja 3.1) | Nazwa, logo, paleta o wysokim kontraście |
 | 1–3 h | Agent: prompt 7.1, głos, język; pierwsze testowe rozmowy | Przejście trasy dworzec → Arena i spisanie `dojazd-hackyeah.md` |
 | 3–6 h | Pola analizy (sekcja 5), webhook, tabele, zapis barier, Redis + webhook inicjacji (sekcja 8.4); w tle `npm run ingest` (sekcja 6.2) | Design system z sekcji 9.3 (zmienne CSS, kafle, listy, sheet) w Figmie, makiety Przeglądu i Priorytetów, teksty PL / EN / UK |
 | 6–9 h | Narzędzie `szukaj_wiedzy`, job tematów i wynik priorytetu (sekcja 8.6), API metryk | Wdrożenie komponentów w Next.js, tryb ciemny, strona publiczna |
@@ -989,6 +1036,7 @@ Zawsze miej nagrany film zapasowy na wypadek problemów z siecią.
 - Mapa barier z geokodowaniem miejsc.
 - Panel dla miasta do oznaczania barier jako „naprawione” i SMS zwrotny do zgłaszających.
 - Wolontariusze i mieszkańcy edytujący bazę wiedzy o trudnych przystankach.
+- Numer +48 (najlepiej bezpłatny 800) zamiast +420, żeby dzwoniący z Polski nie płacili za połączenie międzynarodowe.
 - Integracja z aplikacją mKraków.
 - Oficjalne API / eksport hubMI.pl zamiast crawla, gdy będzie dostępne; Obserwator Statystyk jako warstwa na mapie barier.
 - Subskrypcja publikacji (RSS / e-mail) dla radnych dzielnic i organizacji pozarządowych.
