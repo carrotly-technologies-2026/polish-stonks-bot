@@ -9,7 +9,7 @@ import { param, type SearchParams } from '@/lib/filters';
 import { OPEN_FILES } from '@/lib/openData';
 import { PublicReport } from '@/components/PublicReport';
 import { Chip } from '@/components/Chip';
-import { DemoLabel, EmptyState, ErrorCard, Muted, PageHeader, Panel } from '@/components/ui';
+import { EmptyState, ErrorCard, Muted, PageHeader, Panel } from '@/components/ui';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -64,7 +64,6 @@ export default async function Raport({ params, searchParams }: {
                       <p className="font-medium">{fmtDate(locale, a.okres_od)} – {fmtDate(locale, a.okres_do)}</p>
                       <p className="small">{t('publishedAt', { date: fmtDate(locale, a.opublikowano, true) })} · {t('topicsCount', { count: a.liczba_tematow })}</p>
                     </div>
-                    <DemoLabel show={a.demo} />
                     {a.id === latestId && <Chip tone="success" label={t('current')} />}
                     <ChevronRight size={18} className="muted" aria-hidden />
                   </Link>

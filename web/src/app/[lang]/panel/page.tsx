@@ -10,7 +10,7 @@ import { TimeSeries } from '@/components/charts/TimeSeries';
 import { BarList } from '@/components/charts/BarList';
 import { LiveP1 } from '@/components/LiveP1';
 import { RefreshButton } from '@/components/RefreshButton';
-import { DemoLabel, ErrorCard, PageHeader, Panel } from '@/components/ui';
+import { ErrorCard, PageHeader, Panel } from '@/components/ui';
 
 export default async function Overview({ params, searchParams }: {
   params: Promise<{ lang: string }>; searchParams: Promise<SearchParams>;
@@ -45,7 +45,6 @@ export default async function Overview({ params, searchParams }: {
           <>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <p className="small">{tc('period', { from: fmtDate(l, m.okres_od, true), to: fmtDate(l, m.okres_do, true) })}</p>
-              <DemoLabel show={m.demo} />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <MetricTile label={tm('rozmowy')} value={n(m.rozmowy.razem)}

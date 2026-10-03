@@ -87,10 +87,6 @@ export const panelApi = {
     call<Publikacja>(`/api/publikacje/${encodeURIComponent(id)}${qs({ lang })}`, ADMIN),
   publish: (id: string) =>
     call<Publikacja>(`/api/publikacje/${encodeURIComponent(id)}/opublikuj`, { ...ADMIN, method: 'POST' }),
-  seedDemo: () => call<{ rozmowy: number; bariery: number; zapytania: number }>('/api/demo/seed', {
-    ...ADMIN, method: 'POST', body: { dni: 14, rozmow: 120 },
-  }),
-  deleteDemo: () => call<unknown>('/api/demo', { ...ADMIN, method: 'DELETE' }),
   job: (name: 'tematy' | 'raport-dzienny') =>
     call<unknown>(`/jobs/${name}`, { ...ADMIN, method: 'POST', body: {} }),
 };

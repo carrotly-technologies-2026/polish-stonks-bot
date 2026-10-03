@@ -1,12 +1,12 @@
 {
   "meta": {
-    "title": "Halo, Hub! – Barrier-free Kraków",
+    "title": "MayAI Wirtualny Asystent – Barrier-free Kraków",
     "description": "Call and a voice guide will lead you around Kraków. Every call helps the city remove barriers.",
-    "reportTitle": "Report for residents – Halo, Hub!",
-    "panelTitle": "City panel – Halo, Hub!"
+    "reportTitle": "Report for residents – MayAI Wirtualny Asystent",
+    "panelTitle": "City panel – MayAI Wirtualny Asystent"
   },
   "common": {
-    "appName": "Halo, Hub!",
+    "appName": "MayAI Wirtualny Asystent",
     "demo": "sample data",
     "demoHint": "These numbers come from demonstration data, not from real calls.",
     "period": "Period: {from} – {to}",
@@ -63,7 +63,7 @@
   },
   "errors": {
     "backendTitle": "Couldn’t load the data",
-    "backendDesc": "The Halo, Hub! server isn’t responding right now. Please try again in a moment.",
+    "backendDesc": "The MayAI Wirtualny Asystent server isn’t responding right now. Please try again in a moment.",
     "details": "Technical details: {error}",
     "retry": "Reload page",
     "notFound": "Not found"
@@ -81,9 +81,9 @@
     "apply": "Apply"
   },
   "home": {
-    "eyebrow": "HackYeah 2026 · Halo, Hub!",
+    "eyebrow": "HackYeah 2026 · MayAI Wirtualny Asystent",
     "heroTitle": "Kraków without barriers – call MayAI",
-    "heroLead": "MayAI is the voice assistant of Halo, Hub!. Say where you are and where you are going – she guides you step by step in Polish, Ukrainian or English. No app needed, any phone works.",
+    "heroLead": "MayAI Wirtualny Asystent is a voice assistant. Say where you are and where you are going – she guides you step by step in Polish, Ukrainian or English. No app needed, any phone works.",
     "callLabel": "Call MayAI",
     "callNote": "This is a Czech number (+420). Calling from Poland is an international call and may cost more than a domestic one – check your operator’s rates.",
     "widgetTitle": "Talk in the browser (no phone needed)",
@@ -564,7 +564,7 @@
     "footerRops": "On rops.krakow.pl",
     "footerProject": "Project",
     "footerMayai": "MayAI – voice guide",
-    "footerPanel": "Halo, Hub! analytics panel",
+    "footerPanel": "MayAI Wirtualny Asystent analytics panel",
     "metaTitle": "ROPS Kraków knowledge assistant (prototype)",
     "metaDesc": "Ask about social innovation, research reports and the Social Challenges Map of Małopolska. Answers with sources and files from rops.krakow.pl.",
     "eyebrow": "Prototype · HackYeah 2026",

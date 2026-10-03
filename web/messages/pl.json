@@ -1,12 +1,12 @@
 {
   "meta": {
-    "title": "Halo, Hub! – Kraków bez barier",
+    "title": "MayAI Wirtualny Asystent – Kraków bez barier",
     "description": "Zadzwoń, a głosowy przewodnik poprowadzi cię po Krakowie. Każda rozmowa pomaga miastu usuwać bariery.",
-    "reportTitle": "Raport dla mieszkańców – Halo, Hub!",
-    "panelTitle": "Panel miasta – Halo, Hub!"
+    "reportTitle": "Raport dla mieszkańców – MayAI Wirtualny Asystent",
+    "panelTitle": "Panel miasta – MayAI Wirtualny Asystent"
   },
   "common": {
-    "appName": "Halo, Hub!",
+    "appName": "MayAI Wirtualny Asystent",
     "demo": "dane przykładowe",
     "demoHint": "Te liczby pochodzą z danych demonstracyjnych, a nie z prawdziwych rozmów.",
     "period": "Okres: {from} – {to}",
@@ -63,7 +63,7 @@
   },
   "errors": {
     "backendTitle": "Nie udało się pobrać danych",
-    "backendDesc": "Serwer Halo, Hub! chwilowo nie odpowiada. Spróbuj ponownie za chwilę.",
+    "backendDesc": "Serwer MayAI Wirtualny Asystent chwilowo nie odpowiada. Spróbuj ponownie za chwilę.",
     "details": "Szczegóły techniczne: {error}",
     "retry": "Odśwież stronę",
     "notFound": "Nie znaleziono"
@@ -81,9 +81,9 @@
     "apply": "Zastosuj"
   },
   "home": {
-    "eyebrow": "HackYeah 2026 · Halo, Hub!",
+    "eyebrow": "HackYeah 2026 · MayAI Wirtualny Asystent",
     "heroTitle": "Kraków bez barier – zadzwoń do MayAI",
-    "heroLead": "MayAI to głosowa asystentka Halo, Hub!. Powiedz, gdzie jesteś i dokąd jedziesz – poprowadzi cię krok po kroku po polsku, ukraińsku lub angielsku. Bez aplikacji, wystarczy zwykły telefon.",
+    "heroLead": "MayAI Wirtualny Asystent to głosowa asystentka. Powiedz, gdzie jesteś i dokąd jedziesz – poprowadzi cię krok po kroku po polsku, ukraińsku lub angielsku. Bez aplikacji, wystarczy zwykły telefon.",
     "callLabel": "Zadzwoń do MayAI",
     "callNote": "To czeski numer (+420). Z Polski połączenie jest międzynarodowe i może kosztować więcej niż krajowe – sprawdź cennik swojego operatora.",
     "widgetTitle": "Porozmawiaj w przeglądarce (bez telefonu)",
@@ -564,7 +564,7 @@
     "footerRops": "Na rops.krakow.pl",
     "footerProject": "Projekt",
     "footerMayai": "MayAI – przewodnik głosowy",
-    "footerPanel": "Panel analityczny Halo, Hub!",
+    "footerPanel": "Panel analityczny MayAI Wirtualny Asystent",
     "metaTitle": "Asystent wiedzy ROPS Kraków (prototyp)",
     "metaDesc": "Zapytaj o innowacje społeczne, raporty z badań i Mapę Wyzwań Społecznych Małopolski. Odpowiedzi ze źródłami i plikami z rops.krakow.pl.",
     "eyebrow": "Prototyp · HackYeah 2026",
