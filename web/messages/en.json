@@ -196,6 +196,7 @@
     "reports": "{count, plural, one {# report} other {# reports}}",
     "people": "{count, plural, one {# person} other {# people}}",
     "trend": "7-day trend: ×{value}",
+    "trendCapped": "(the score counts at most ×2)",
     "open": "Details of topic {title}",
     "breakdown": "Where this score comes from",
     "barriers": "Reports",

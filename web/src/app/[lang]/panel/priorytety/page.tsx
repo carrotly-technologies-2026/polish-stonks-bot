@@ -115,7 +115,7 @@ async function TopicDetails({ d }: { d: TematSzczegoly }) {
 
       <H>{t('breakdown')}</H>
       <p className="rounded-md bg-surface-2 p-3 font-mono text-[0.8125rem]">{d.rozbicie}</p>
-      <p className="small mt-1">{t('trend', { value: fmtNumber(l, d.trend_7d, 2) })}</p>
+      <p className="small mt-1">{t('trend', { value: fmtNumber(l, d.trend_7d, 2) })}{d.trend_7d > 2 && ` ${t('trendCapped')}`}</p>
 
       <H>{t('changeStatus')}</H>
       <TopicStatusForm key={d.zaktualizowano} id={d.id} status={d.status} note={d.notatka} />
