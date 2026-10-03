@@ -17,7 +17,7 @@ Zbuduj MVP zgodnie z tym dokumentem. Zasady:
    Nie pisz własnego silnika tras ani integracji z Google Maps.
 2. **Backend jest cienki.** Robi tylko to: odbiera webhook po rozmowie i zapisuje
    bariery, trzyma krótki kontekst rozmowy w Redis (TTL 1 h), żeby ponowny telefon
-   kontynuował trasę, wysyła SMS na prośbę agenta, odpowiada na narzędzie `szukaj_wiedzy`
+   kontynuował trasę, odpowiada na narzędzie `szukaj_wiedzy`
    (RAG na danych hubMI / ROPS Kraków), liczy metryki i priorytety tematów, generuje dzienny
    raport LLM, publikuje metryki i serwuje frontend.
 3. Stack: Node 20 + TypeScript + Hono (lub Next.js API routes), Supabase (Postgres + pgvector),
@@ -41,13 +41,10 @@ flowchart LR
     EL -->|webhook inicjacji:<br/>pobierz kontekst| BE
     BE <-->|kontekst, TTL 1 h| RD[(Redis)]
     EL <-->|RAG wbudowany| KB[(Baza wiedzy ElevenLabs<br/>dokumenty .md)]
-    EL -->|tool: wyslij_sms| BE[Backend API]
-    EL -->|tool: szukaj_wiedzy| BE
+    EL -->|tool: szukaj_wiedzy| BE[Backend API]
     SRC[hubMI / ROPS Kraków<br/>biblioteka innowacji, raporty,<br/>statystyki, mapa wyzwań] -->|crawl + PDF| ING[Ingest<br/>chunk + embed]
     ING --> VEC[(Supabase pgvector<br/>wiedza_dokumenty,<br/>wiedza_fragmenty)]
     BE <-->|wyszukiwanie hybrydowe| VEC
-    BE -->|Messages API| TW
-    TW -->|SMS| U
     EL -->|webhook po rozmowie| BE
     BE --> DB[(Supabase<br/>rozmowy, bariery)]
     CRON[Cron dzienny] --> BE
@@ -58,12 +55,12 @@ flowchart LR
 
 | Warstwa | Odpowiedzialność | Technologia |
 |---|---|---|
-| Telefonia | Numer, połączenia przychodzące, SMS | Twilio |
+| Telefonia | Numer, połączenia przychodzące | Twilio / operator SIP |
 | Rozmowa | Rozpoznanie mowy, LLM, synteza głosu, wiele języków | ElevenLabs Agents |
 | Wiedza stała | Dojazd na HackYeah, Kraków w pigułce, porady dostępności | Knowledge Base ElevenLabs |
 | Wiedza z hubMI (RAG) | Biblioteka Innowacji Społecznych, raporty, mapa wyzwań, publikacje ROPS | Ingest + Supabase pgvector + narzędzie `szukaj_wiedzy` |
 | Ekstrakcja | Bariery z transkrypcji jako dane strukturalne | Analiza rozmowy ElevenLabs (data collection) |
-| Backend | Webhooki, SMS, RAG, tematy, raport, API panelu i otwarte dane | Node + Hono |
+| Backend | Webhooki, RAG, tematy, raport, API panelu i otwarte dane | Node + Hono |
 | Kontekst | Stan ostatniej rozmowy dzwoniącego przez 1 h (dokąd jedzie, na którym kroku skończył) | Redis (Upstash / Railway) |
 | Dane | Rozmowy, bariery, tematy, metryki, raporty, publikacje | Supabase Postgres |
 | Priorytety | Grupowanie barier w tematy, wynik priorytetu, rekomendacje z RAG | Job w backendzie + LLM |
@@ -80,7 +77,6 @@ sequenceDiagram
     participant U as Rozmówca
     participant T as Twilio
     participant E as ElevenLabs Agent
-    participant B as Backend
     U->>T: dzwoni na numer
     T->>E: przekazuje połączenie
     E->>U: „Cześć, tu Halo, Hub! Gdzie teraz jesteś?”
@@ -89,9 +85,7 @@ sequenceDiagram
     E->>U: jeden krok, czeka na „jestem”
     U->>E: „winda nie działa, mam walizkę”
     E->>U: pomaga + „Gdzie dokładnie to było?”
-    E->>B: tool wyslij_sms(trasa)
-    B->>T: Messages API
-    T->>U: SMS z podsumowaniem trasy
+    E->>U: na koniec ustnie podsumowuje trasę, powoli, z możliwością powtórzenia
 ```
 
 ### 2.2 Po rozmowie
@@ -134,7 +128,7 @@ sequenceDiagram
 1. Cron co godzinę przelicza tematy i wynik priorytetu (sekcja 8.6).
 2. Cron raz dziennie bierze tematy i metryki z ostatnich 24 h, a dla 5 najważniejszych tematów
    pyta RAG o pasujące rozwiązania z Biblioteki Innowacji.
-3. Wysyła to do LLM z promptem z sekcji 7.3 (raport po polsku, potem tłumaczenie EN i UK).
+3. Wysyła to do LLM z promptem z sekcji 7.2 (raport po polsku, potem tłumaczenie EN i UK).
 4. Zapisuje raport w `raporty` i migawkę w `publikacje` ze statusem `szkic`.
 5. Urzędnik przegląda szkic w panelu i klika „Opublikuj” – migawka trafia na stronę publiczną
    i do otwartych danych (sekcja 9.6). Na demo można włączyć automatyczną publikację.
@@ -157,7 +151,7 @@ sequenceDiagram
         B->>R: SET rag:{hash} EX 3600
     end
     B-->>E: 1–3 wyniki: tytuł, streszczenie do przeczytania, kontakt, źródło
-    E->>U: jedno rozwiązanie, dwa zdania, źródło, „Wysłać link SMS-em?”
+    E->>U: jedno rozwiązanie, dwa zdania, źródło i kontakt
     B->>B: zapis w wiedza_zapytania (bez numeru)
 ```
 
@@ -178,7 +172,7 @@ niż hackathon – dlatego teraz numer czeski, a +48 docelowo (sekcja 14).
 
 **Wariant A – numer jest w Twilio (Phone Numbers → Active numbers):**
 
-1. Sprawdź w Twilio, że numer ma włączone **Voice** (i SMS, jeśli Twilio go dla CZ oferuje).
+1. Sprawdź w Twilio, że numer ma włączone **Voice**.
 2. ElevenLabs → Agents → Phone Numbers → **Import number → From Twilio**:
    - Label: `Halo, Hub! inbound CZ`
    - Phone number: `+420910923449` (format E.164, bez spacji)
@@ -196,7 +190,7 @@ niż hackathon – dlatego teraz numer czeski, a +48 docelowo (sekcja 14).
    (np. `sip:+420910923449@<host-elevenlabs>`). Jeśli operator wymaga, dodaj adresy IP / host
    ElevenLabs do listy dozwolonych.
 3. Upewnij się, że operator przekazuje numer dzwoniącego (CLIP) w nagłówku `From` –
-   bez tego nie zadziała kontekst z Redis (sekcja 8.4) ani SMS na numer rozmówcy.
+   bez tego nie zadziała kontekst z Redis (sekcja 8.4).
 4. Przypisz numer do agenta jak w wariancie A.
 
 Dokładne pola formularza importu i adres SIP sprawdź w aktualnej dokumentacji ElevenLabs.
@@ -213,15 +207,7 @@ Dokładne pola formularza importu i adres SIP sprawdź w aktualnej dokumentacji 
 - Dla dzwoniących z Polski to **połączenie międzynarodowe** – płatne według taryfy rozmówcy,
   a część taryf seniorskich go nie obejmuje. Na stronie publicznej pokazuj numer w formacie
   `+420 910 923 449` z dopiskiem o kosztach. Docelowo numer +48 (najlepiej bezpłatny 800).
-- Numery z zakresu 910 zwykle **nie wysyłają SMS-ów**. SMS-y z backendu idą wtedy z osobnego
-  numeru lub nadawcy alfanumerycznego `HaloHub` w Twilio (`TWILIO_SMS_FROM`); polskie sieci
-  przyjmują nadawców alfanumerycznych.
 - Zapasowe wejście na demo: widget głosowy ElevenLabs na stronie publicznej (działa bez numeru).
-
-### 3.2 SMS
-
-SMS-y wysyła backend przez Twilio Messages API z `TWILIO_SMS_FROM` (numer lub nadawca
-alfanumeryczny, patrz wyżej).
 
 ---
 
@@ -239,7 +225,7 @@ alfanumeryczny, patrz wyżej).
 | Prompt systemowy | sekcja 7.1 |
 | Baza wiedzy | sekcja 6 |
 | Narzędzia systemowe | zakończenie rozmowy, przełączenie na numer człowieka (opcjonalnie) |
-| Narzędzia webhook | `wyslij_sms` (sekcja 8.2), `szukaj_wiedzy` (sekcje 6.2, 7.4) |
+| Narzędzie webhook | `szukaj_wiedzy` (sekcje 6.2, 7.3) |
 | Analiza: zbieranie danych | pola z sekcji 5 |
 | Webhook po rozmowie | `POST {BACKEND_URL}/webhooks/elevenlabs` z sekretem HMAC |
 
@@ -443,15 +429,15 @@ i wywołaj szukaj_wiedzy. Pytanie przekaż po polsku, grupę z rozmowy.
 - Mów tylko to, co zwróciło narzędzie. Niczego nie dopowiadaj.
 - Jedno rozwiązanie naraz, dwa zdania (pole glos_streszczenie), potem
   źródło: „Według Biblioteki Innowacji Społecznych ROPS w Krakowie…”.
-- Zaproponuj SMS z linkiem (wyslij_sms, link z pola url).
+- Jeśli wynik ma kontakt (telefon, instytucję) – podaj go powoli i zaproponuj powtórzenie.
 - Brak wyników → powiedz to wprost i podaj kontakt do Działu Innowacji
   Społecznych ROPS: 12 422 06 36.
 - Odpowiadaj w języku rozmówcy, nawet jeśli źródło jest po polsku.
 
-## SMS
-Na końcu rozmowy o drodze zaproponuj: „Wysłać SMS-a z podsumowaniem
-trasy?” Jeśli tak – wywołaj wyslij_sms z numerem {{system__caller_id}}
-i krótkim podsumowaniem kroków (maks. 5 zdań).
+## Podsumowanie trasy
+Nie wysyłasz SMS-ów ani żadnych wiadomości. Na końcu rozmowy o drodze
+podsumuj trasę ustnie: maks. 5 krótkich zdań, punkty orientacyjne,
+i zapytaj: „Powtórzyć jeszcze raz, żeby mógł pan/pani zapisać?”
 
 ## Bezpieczeństwo
 - Nie pytaj o imię, PESEL, adres zamieszkania ani dane o zdrowiu.
@@ -465,15 +451,7 @@ i krótkim podsumowaniem kroków (maks. 5 zdań).
   jeszcze raz – poprowadzę dalej.”
 ```
 
-### 7.2 Opis narzędzia `wyslij_sms` (dla LLM w ElevenLabs)
-
-```
-Wysyła SMS z podsumowaniem trasy na numer rozmówcy. Wywołaj tylko wtedy,
-gdy rozmówca wyraźnie się zgodził. Parametry: numer – zawsze
-{{system__caller_id}}; tresc – maks. 5 krótkich zdań, bez danych osobowych.
-```
-
-### 7.3 Prompt raportu dziennego (backend → LLM)
+### 7.2 Prompt raportu dziennego (backend → LLM)
 
 ```
 Jesteś analitykiem dostępności miasta Krakowa. Poniżej lista zgłoszeń
@@ -507,7 +485,7 @@ INNOWACJE:
 Tłumaczenie raportu na EN i UK: osobne wywołanie LLM „Przetłumacz wiernie, zachowaj Markdown
 i liczby” – raport jest generowany raz, nie trzy razy.
 
-### 7.4 Opis narzędzia `szukaj_wiedzy` (dla LLM w ElevenLabs)
+### 7.3 Opis narzędzia `szukaj_wiedzy` (dla LLM w ElevenLabs)
 
 ```
 Szuka w bazie innowacji społecznych i materiałów ROPS Kraków (hubMI)
@@ -537,7 +515,6 @@ create table rozmowy (
   czy_dotarl boolean,
   czas_trwania_s int,
   czy_powrot boolean default false,   -- ponowny telefon w ciągu 1 h (z Redis)
-  sms_wyslany boolean default false,
   transkrypcja jsonb,
   utworzono timestamptz default now()
 );
@@ -683,7 +660,6 @@ limit 20;
 |---|---|---|---|
 | POST | `/webhooks/elevenlabs/init` | ElevenLabs (start połączenia) | Czyta kontekst z Redis, zwraca `dynamic_variables` |
 | POST | `/webhooks/elevenlabs` | ElevenLabs | Weryfikuje HMAC, zapisuje rozmowę i bariery, zapisuje kontekst w Redis (TTL 1 h) |
-| POST | `/tools/wyslij_sms` | Agent (nagłówek `x-tool-secret`) | Waliduje numer, wysyła SMS przez Twilio |
 | POST | `/tools/szukaj_wiedzy` | Agent (nagłówek `x-tool-secret`) | RAG: top 3 wyniki z pgvector, cache Redis 1 h, log zapytania |
 | POST | `/jobs/tematy` | Cron co godzinę | Grupuje bariery w tematy, liczy wynik priorytetu, dopina innowacje z RAG |
 | POST | `/jobs/raport-dzienny` | Cron (nagłówek `x-cron-secret`) | Generuje raport LLM (PL + EN + UK) i szkic publikacji |
@@ -720,7 +696,7 @@ const rozmowa = await db.rozmowy.upsert({
   czy_dotarl: val("czy_dotarl"),
   czy_powrot: d.conversation_initiation_client_data?.dynamic_variables?.czy_powrot === "tak",
   transkrypcja: d.transcript,
-});                                                   // sms_wyslany ustawia /tools/wyslij_sms po conversation_id
+});
 
 for (const p of problemy.filter(isValidBariera)) {   // walidacja kategorii i powagi
   await db.bariery.insert({ rozmowa_id: rozmowa.id, ...p });
@@ -846,10 +822,7 @@ return {                                              // krótko: każdy token t
 ### 8.7 Zmienne środowiskowe
 
 ```
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
 INBOUND_NUMBER=+420910923449    # numer bota (sekcja 3.1), pokazywany na stronie publicznej
-TWILIO_SMS_FROM=               # numer z SMS albo nadawca alfanumeryczny, np. HaloHub
 ELEVENLABS_WEBHOOK_SECRET=
 TOOL_SECRET=
 CRON_SECRET=
@@ -923,7 +896,7 @@ innowacje z RAG z linkami, zmiana statusu), `LanguageSwitcher` (segmented PL / E
 
 - **Interfejs:** `next-intl`, pliki `messages/pl.json`, `en.json`, `uk.json`; prefiks w URL
   (`/pl/raport`), wybór zapamiętany w ciasteczku, domyślny z `Accept-Language`, `hreflang` na stronach publicznych.
-- **Treści z danych:** raport dnia generowany po polsku i tłumaczony (sekcja 7.3), tytuły tematów
+- **Treści z danych:** raport dnia generowany po polsku i tłumaczony (sekcja 7.2), tytuły tematów
   tłumaczone przy publikacji i zapisywane w migawce. Nazwy miejsc zostają po polsku.
 - **Języki rozmów jako metryka:** filtr „język rozmowy” na każdej stronie panelu i osobny widok
   `/panel/jezyki`.
@@ -946,7 +919,6 @@ Każda metryka ma stałą definicję, okres i źródło – te same liczby w pan
 | `bariery_jezykowe` | Bariery kategorii `JEZYK` | język rozmowy |
 | `luka_jezykowa_dotarcia` | `odsetek_dotarlo` (PL) − `odsetek_dotarlo` (inne języki), w punktach procentowych | język |
 | `pytania_rag`, `odsetek_bez_wynikow` | Liczba pytań do `szukaj_wiedzy` i odsetek bez wyników | grupa, język |
-| `sms_wyslane` | Liczba wysłanych SMS-ów | – |
 
 Metryki liczone są widokiem SQL `metryki_dzienne` (materializowany, odświeżany przez job tematów).
 
@@ -965,7 +937,7 @@ Metryki liczone są widokiem SQL `metryki_dzienne` (materializowany, odświeżan
 
 ## 10. Bezpieczeństwo i prywatność
 
-- Numer telefonu tylko jako solony hash; SMS wysyłany w trakcie rozmowy, numer nie trafia do bazy.
+- Numer telefonu tylko jako solony hash, surowy numer nie trafia do bazy. Bot nie wysyła SMS-ów ani innych wiadomości.
 - Prompt zabrania pytania o dane osobowe; ekstrakcja zapisuje tylko miejsca publiczne.
 - Kontekst w Redis: klucz to solony hash numeru, treść bez danych osobowych, automatyczne
   usunięcie po 1 h (TTL). Redis w regionie UE (Upstash eu-central lub Railway EU).
@@ -985,7 +957,6 @@ Metryki liczone są widokiem SQL `metryki_dzienne` (materializowany, odświeżan
 |---|---|---|
 | Numer przychodzący | miesięcznie | teraz +420 910 923 449, docelowo +48 / 800 po zatwierdzeniu |
 | Połączenia przychodzące Twilio | za minutę | |
-| SMS Twilio | za wiadomość | |
 | ElevenLabs Agents | za minutę rozmowy | zależnie od planu |
 | LLM raportu | za dzień | kilka tysięcy tokenów dziennie |
 | Supabase | miesięcznie | plan darmowy wystarczy na pilotaż |
@@ -1006,7 +977,7 @@ Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmo
 | 1–3 h | Agent: prompt 7.1, głos, język; pierwsze testowe rozmowy | Przejście trasy dworzec → Arena i spisanie `dojazd-hackyeah.md` |
 | 3–6 h | Pola analizy (sekcja 5), webhook, tabele, zapis barier, Redis + webhook inicjacji (sekcja 8.4); w tle `npm run ingest` (sekcja 6.2) | Design system z sekcji 9.3 (zmienne CSS, kafle, listy, sheet) w Figmie, makiety Przeglądu i Priorytetów, teksty PL / EN / UK |
 | 6–9 h | Narzędzie `szukaj_wiedzy`, job tematów i wynik priorytetu (sekcja 8.6), API metryk | Wdrożenie komponentów w Next.js, tryb ciemny, strona publiczna |
-| 9–11 h | Panel: Przegląd, Priorytety, Języki, Wiedza; `wyslij_sms`, raport dzienny z tłumaczeniem, publikacja, dane demonstracyjne | Audyt WCAG, dopracowanie animacji, slajdy i scenariusz filmu |
+| 9–11 h | Panel: Przegląd, Priorytety, Języki, Wiedza; raport dzienny z tłumaczeniem, publikacja, dane demonstracyjne | Audyt WCAG, dopracowanie animacji, slajdy i scenariusz filmu |
 | 11–13 h | Testy kilkunastu rozmów, poprawki promptu | Nagranie filmu zapasowego |
 | reszta | Bufor | Bufor |
 
@@ -1019,7 +990,7 @@ Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmo
    Bot pyta o bagaż, prowadzi krok po kroku, wybiera windę.
 3. **Bariera:** „Winda nie działa.” Bot pomaga, pyta, gdzie dokładnie.
 4. **Zgubienie się:** „Chyba wysiadłem za wcześnie.” Bot uspokaja i prosi o podanie telefonu przechodniowi.
-5. **Pomoc z hubMI:** „Moja mama jeździ na wózku, jest coś, co jej ułatwi życie?” Bot: „Chwileczkę, sprawdzam… Według Biblioteki Innowacji Społecznych ROPS…” i proponuje SMS z linkiem (RAG).
+5. **Pomoc z hubMI:** „Moja mama jeździ na wózku, jest coś, co jej ułatwi życie?” Bot: „Chwileczkę, sprawdzam… Według Biblioteki Innowacji Społecznych ROPS…” podaje źródło i kontakt (RAG).
 6. **Ponowny telefon:** rozłącz się i zadzwoń jeszcze raz. Bot: „Jechał pan na HackYeah, skończyliśmy na Rondzie Mogilskim – gdzie pan teraz jest?” (kontekst z Redis).
 7. **Zmiana języka:** to samo pytanie po ukraińsku – bot odpowiada po ukraińsku, choć źródła są po polsku.
 8. **Panel:** po rozmowie temat `AWARIA · Dworzec Główny` wskakuje na listę jako **P1** (rozbicie wyniku, języki PL · UK, dopasowana innowacja z RAG). Przełączenie interfejsu na EN, widok Języki z luką dotarcia.
@@ -1034,7 +1005,7 @@ Zawsze miej nagrany film zapasowy na wypadek problemów z siecią.
 
 - Dane ZTP Kraków na żywo (GTFS) jako narzędzie agenta, żeby numery linii i opóźnienia były pewne.
 - Mapa barier z geokodowaniem miejsc.
-- Panel dla miasta do oznaczania barier jako „naprawione” i SMS zwrotny do zgłaszających.
+- Panel dla miasta do oznaczania barier jako „naprawione”.
 - Wolontariusze i mieszkańcy edytujący bazę wiedzy o trudnych przystankach.
 - Numer +48 (najlepiej bezpłatny 800) zamiast +420, żeby dzwoniący z Polski nie płacili za połączenie międzynarodowe.
 - Integracja z aplikacją mKraków.
