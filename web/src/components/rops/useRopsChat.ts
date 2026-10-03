@@ -31,6 +31,7 @@ export function useRopsChat() {
   const [restored, setRestored] = useState(false);
   const msgsRef = useRef<Msg[]>([]);
   const busyRef = useRef(false);
+  const reqRef = useRef<AbortController | null>(null);
 
   const update = useCallback((next: Msg[]) => { msgsRef.current = next; setMsgs(next); save(next); }, []);
 
@@ -50,10 +51,13 @@ export function useRopsChat() {
     update(withQ);
     busyRef.current = true;
     setBusy(true);
+    const ctl = new AbortController();
+    reqRef.current = ctl;
     let reply: Msg;
     try {
       const res = await fetch('/api/rops/zapytaj', {
         method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pytanie, historia }),
+        signal: ctl.signal,
       });
       const data = (await res.json().catch(() => null)) as (OdpowiedzRops & { error?: RopsError }) | null;
       if (!res.ok || !data || typeof data.odpowiedz !== 'string') {
@@ -65,6 +69,9 @@ export function useRopsChat() {
     } catch {
       reply = { id: uid(), rola: 'asystent', tresc: '', error: 'failed' };
     }
+    // A new conversation was started while waiting: drop this answer.
+    if (reqRef.current !== ctl) return;
+    reqRef.current = null;
     update([...withQ, reply]);
     busyRef.current = false;
     setBusy(false);
@@ -78,7 +85,14 @@ export function useRopsChat() {
     msgsRef.current = cur.slice(0, cur.map((m) => m.tresc).lastIndexOf(q));
     void send(q);
   }, [send]);
-  const clear = useCallback(() => update([]), [update]);
+  /** New conversation: drops the messages (and with them the history sent as context) and any pending answer. */
+  const reset = useCallback(() => {
+    reqRef.current?.abort();
+    reqRef.current = null;
+    busyRef.current = false;
+    setBusy(false);
+    update([]);
+  }, [update]);
 
-  return { msgs, busy, restored, send, retry, clear, lastQuestion };
+  return { msgs, busy, restored, send, retry, reset, lastQuestion };
 }

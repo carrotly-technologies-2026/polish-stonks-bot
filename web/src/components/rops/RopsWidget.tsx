@@ -5,11 +5,10 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { useTranslations } from 'next-intl';
 import {
-  AlertTriangle, Bot, Loader2, Maximize2, MessageCircle, Mic, MicOff, Minus, Phone, RotateCcw, SendHorizontal,
-  Sparkles, Trash2,
+  AlertTriangle, Bot, Loader2, Maximize2, MessageCircle, MessageSquarePlus, Minus, Phone, RotateCcw, SendHorizontal,
+  Sparkles,
 } from 'lucide-react';
 import { linkCitations } from '@/lib/rops';
-import { ElevenLabsWidget } from '@/components/ElevenLabsWidget';
 import { SourceCard } from './SourceCard';
 import { useRopsChat, type Msg } from './useRopsChat';
 
@@ -62,15 +61,14 @@ function Answer({ m }: { m: Msg }) {
  * Intercom-style chat widget of the ROPS knowledge assistant: launcher bubble bottom-right that opens
  * (once per session) into a panel with cited answers, compact source cards and file downloads.
  */
-export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: {
-  lang: string; agentId: string | null; phone: string | null; phoneTel: string | null; initialQuestion?: string;
+export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
+  lang: string; phone: string | null; phoneTel: string | null; initialQuestion?: string;
 }) {
   const t = useTranslations('rops.widget');
   const tc = useTranslations('rops.chat');
-  const { msgs, busy, restored, send, retry, clear, lastQuestion } = useRopsChat();
+  const { msgs, busy, restored, send, retry, reset, lastQuestion } = useRopsChat();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(true);
-  const [voice, setVoice] = useState(false);
   const [input, setInput] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -131,12 +129,10 @@ export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: 
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(input); }
   };
   const onPanelKey = (e: KeyboardEvent<HTMLElement>) => { if (e.key === 'Escape') { e.stopPropagation(); minimize(); } };
-  const doClear = () => { clear(); inputRef.current?.focus(); };
+  const newChat = () => { reset(); setInput(''); inputRef.current?.focus(); };
 
   return (
     <>
-      {voice && agentId && <ElevenLabsWidget agentId={agentId} />}
-
       <section
         id="czat" role="dialog" aria-modal="false" aria-labelledby="rw-title" onKeyDown={onPanelKey}
         className={`rops-widget rops-light fixed inset-x-0 bottom-0 z-[60] ${open ? 'flex' : 'hidden'} h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border border-[var(--outline-variant)] bg-surface text-[var(--on-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.28)] sm:inset-x-auto sm:right-5 sm:bottom-[6.25rem] sm:h-[min(600px,calc(100dvh-8rem))] sm:w-[380px] sm:rounded-2xl`}
@@ -147,15 +143,9 @@ export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: 
             <h2 id="rw-title" className="truncate text-[0.9375rem] leading-[1.25rem] font-medium">{t('title')}</h2>
             <p className="truncate text-[0.75rem] leading-[1rem] opacity-90">{t('sub')}</p>
           </div>
-          {agentId && (
-            <button type="button" onClick={() => setVoice((v) => !v)} aria-pressed={voice}
-              className="rw-icon" title={voice ? t('voiceOff') : t('voice')} aria-label={voice ? t('voiceOff') : t('voice')}>
-              {voice ? <MicOff size={18} aria-hidden /> : <Mic size={18} aria-hidden />}
-            </button>
-          )}
           {msgs.length > 0 && (
-            <button type="button" onClick={doClear} disabled={busy} className="rw-icon" title={tc('clear')} aria-label={tc('clear')}>
-              <Trash2 size={18} aria-hidden />
+            <button type="button" onClick={newChat} className="rw-icon" title={tc('newChat')} aria-label={tc('newChat')}>
+              <MessageSquarePlus size={18} aria-hidden />
             </button>
           )}
           <Link href={`/${lang}/rops/szukaj`} className="rw-icon" title={t('full')} aria-label={t('full')}>
@@ -165,8 +155,6 @@ export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: 
             <Minus size={20} aria-hidden />
           </button>
         </header>
-
-        {voice && <p role="status" className="small bg-[var(--surface-2)] px-4 py-2">{t('voiceHint')}</p>}
 
         <div ref={logRef} role="log" aria-live="polite" aria-relevant="additions" aria-label={tc('log')}
           className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [overflow-anchor:none] px-3 py-3">
