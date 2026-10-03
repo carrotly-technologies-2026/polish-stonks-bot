@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, ListOrdered,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, LibraryBig, ListOrdered,
   Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
 import { globalQuery } from '@/lib/filters';
@@ -51,6 +51,7 @@ function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
           {[
             { href: `/${locale}/raport`, key: 'publicReport', Icon: FileText },
             { href: `/${locale}/info`, key: 'citizenPage', Icon: Info },
+            { href: `/${locale}/rops`, key: 'rops', Icon: LibraryBig },
             { href: '/api/open-data/metryki.csv', key: 'csvMetrics', Icon: FileSpreadsheet },
             { href: '/api/open-data/tematy.csv', key: 'csvTopics', Icon: FileSpreadsheet },
           ].map(({ href, key, Icon }) => (
