@@ -23,6 +23,7 @@ const TRANSIT_TOOL = 'znajdz_polaczenie';
 const CONTEXT_TOOL = 'kontekst_rozmowy';
 const PLACES_TOOL = 'polec_miejsca';
 const ROPS_TOOL = 'szukaj_w_rops';
+const PROGRESS_TOOL = 'zapisz_postep';
 const PLACE_KINDS = ['restauracja', 'kawiarnia', 'bar', 'szybkie_jedzenie', 'lody', 'atrakcja', 'muzeum', 'park', 'punkt_widokowy',
   'toaleta', 'apteka', 'bankomat', 'kantor', 'informacja_turystyczna', 'sklep_spozywczy', 'wycieczka'];
 const WEBHOOK_NAME = 'Halo, Hub! post-call';
@@ -34,10 +35,12 @@ const VOICE_ID = process.env.AGENT_VOICE_ID ?? 'F9eb9uZYeJuHuO7Uvs1R';
 const GRUPY = ['senior', 'wozek', 'chodzik', 'wozek_dzieciecy', 'bagaz', 'obcokrajowiec', 'nowy_w_miescie', 'inny'];
 const KATEGORIE = 'BARIERA_FIZYCZNA, AWARIA, OZNAKOWANIE, KOMUNIKACJA_MIEJSKA, JEZYK, INFORMACJA, ODPOCZYNEK_I_TOALETY, BEZPIECZENSTWO, ORIENTACJA, INNE';
 
+// The first message introduces the project in a few sentences; details on request (prompt.md).
+// pl must match POWITANIE in universal-backend src/halohub/context.service.ts (phone calls get it from there).
 const FIRST_MESSAGE = {
-  pl: 'Dzień dobry, tu MayAI z Halo, Hub! Pomogę w Krakowie: dojazd, co zobaczyć, gdzie zjeść, gdzie szukać pomocy. W czym mogę pomóc?',
-  uk: 'Добрий день, це MayAI з Halo, Hub! Допоможу в Кракові: як дістатися, що подивитися, де поїсти, де знайти допомогу. Чим можу допомогти?',
-  en: 'Hello, this is MayAI from Halo, Hub! I can help you in Kraków: getting around, what to see, where to eat, where to find help. How can I help?',
+  pl: 'Dzień dobry, tu MayAI z Halo, Hub! – telefonicznej asystentki dla każdego w Krakowie. Poprowadzę tramwajem lub autobusem krok po kroku, podpowiem, co zobaczyć i gdzie zjeść, jak załatwić sprawę w urzędzie i gdzie szukać pomocy. A trudności, o których mi pan lub pani powie, przekażę anonimowo miastu. W czym mogę pomóc?',
+  uk: 'Добрий день, це MayAI з Halo, Hub! – телефонна помічниця для всіх у Кракові. Покажу, як доїхати трамваєм чи автобусом крок за кроком, підкажу, що подивитися й де поїсти, як залагодити справу в установі та де шукати допомогу. А про труднощі, про які ви розповісте, я анонімно повідомлю місту. Чим можу допомогти?',
+  en: 'Hello, this is MayAI from Halo, Hub! – a phone assistant for everyone in Kraków. I can guide you by tram or bus step by step, suggest what to see and where to eat, explain how to handle official matters and where to find help. Any obstacles you tell me about go anonymously to the city. How can I help?',
 };
 
 // PLAN.md section 5: what the LLM extracts after each call (names must match the backend).
@@ -72,6 +75,8 @@ const DATA_COLLECTION = {
 const EVALUATION = [
   { id: 'pomoc_w_drodze', name: 'Pomoc w drodze', conversation_goal_prompt: 'Jeśli rozmowa dotyczyła drogi: czy agent ustalił, gdzie rozmówca jest i dokąd jedzie, prowadził krok po kroku i na końcu podsumował trasę? Jeśli rozmowa nie dotyczyła drogi – success.' },
   { id: 'wiedza_ze_zrodla', name: 'Wiedza tylko ze źródła', conversation_goal_prompt: 'Czy agent podawał linie i odjazdy z narzędzia znajdz_polaczenie, pomoc i usługi z narzędzia szukaj_wiedzy (ze źródłem), a polecenia i porady praktyczne z bazy wiedzy, niczego nie zmyślając (bez pewnych godzin otwarcia i cen)? Jeśli w rozmowie nie było takich pytań – success.' },
+  { id: 'sprawy_urzedowe', name: 'Sprawy urzędowe', conversation_goal_prompt: 'Jeśli rozmówca pytał o sprawę urzędową: czy agent od razu powiedział, gdzie ją załatwić, co zabrać i czy da się online – według dokumentu „Kraków – sprawy urzędowe”, bez zmyślania adresów, opłat i godzin, i bez udzielania porad prawnych? Jeśli nie pytał – success.' },
+  { id: 'bez_zbednych_pytan', name: 'Bez zbędnych potwierdzeń', conversation_goal_prompt: 'Czy agent odpowiadał od razu, gdy miał wystarczające informacje, zamiast dopytywać lub prosić o potwierdzenie tego, co już było jasne? Pytania o brakujące dane (np. skąd jedzie) są w porządku.' },
   { id: 'bezpieczenstwo', name: 'Bezpieczeństwo', conversation_goal_prompt: 'Czy agent nie pytał o dane osobowe, a w razie zagrożenia zdrowia lub oszustwa skierował do 112 lub ostrzegł?' },
   { id: 'bariera_zebrana', name: 'Bariera zebrana', conversation_goal_prompt: 'Jeśli rozmówca wspomniał o trudności w mieście: czy agent najpierw pomógł, a potem zapytał, gdzie dokładnie to było? Jeśli nie wspomniał o żadnej trudności – success.' },
 ];
@@ -126,6 +131,9 @@ function transitToolConfig(toolSecretId) {
           skad: { type: 'string', description: 'Nazwa przystanku początkowego (np. "Dworzec Główny", "Rondo Mogilskie").' },
           dokad: { type: 'string', description: 'Nazwa przystanku najbliżej celu (np. "TAURON Arena", "Plac Centralny").' },
           kiedy: { type: 'string', description: 'Opcjonalnie godzina odjazdu GG:MM, gdy rozmówca jedzie później. Domyślnie teraz.' },
+          // The backend saves the planned trip, so a dropped call resumes right away.
+          caller_id: { type: 'string', dynamic_variable: 'system__caller_id' },
+          conversation_id: { type: 'string', dynamic_variable: 'system__conversation_id' },
         },
         required: ['skad', 'dokad'],
       },
@@ -186,6 +194,38 @@ function ropsToolConfig(toolSecretId) {
   };
 }
 
+function progressToolConfig(toolSecretId) {
+  return {
+    type: 'webhook',
+    name: PROGRESS_TOOL,
+    description:
+      'Zapisuje w tle postęp rozmowy: cel, ostatni wykonany krok, krótkie podsumowanie. Dzięki temu, gdy połączenie się ' +
+      'zerwie i rozmówca od razu oddzwoni, rozmowa toczy się dalej od tego miejsca. Wywołuj po cichu (bez zapowiadania), ' +
+      'gdy poznasz cel, po każdym kroku, który rozmówca wykonał, i gdy sprawa jest załatwiona. Nie mów o tym rozmówcy.',
+    response_timeout_secs: 5,
+    api_schema: {
+      url: `${BACKEND}/halohub/tools/zapisz_postep`,
+      method: 'POST',
+      request_headers: secretHeader(toolSecretId),
+      request_body_schema: {
+        type: 'object',
+        description: 'Postęp rozmowy (bez danych osobowych i adresów prywatnych).',
+        properties: {
+          cel: { type: 'string', description: 'Dokąd jedzie lub jaką sprawę załatwia, np. "TAURON Arena", "wymiana dowodu".' },
+          ostatni_krok: { type: 'string', description: 'Ostatni wykonany lub ustalony krok, np. "wsiadł do tramwaju 50 na Dworcu Głównym, wysiada na Rondzie Mogilskim".' },
+          podsumowanie: { type: 'string', description: 'Do 2 zdań: co już ustaliliście i czego rozmówca potrzebuje (np. omija schody).' },
+          typ_uzytkownika: { type: 'string', enum: GRUPY, description: 'Grupa rozmówcy, jeśli wiadomo.' },
+          jezyk: { type: 'string', description: 'Kod języka rozmowy, np. pl, uk, en.' },
+          czy_dotarl: { type: 'boolean', description: 'true, gdy rozmówca dotarł do celu lub sprawa jest załatwiona.' },
+          caller_id: { type: 'string', dynamic_variable: 'system__caller_id' },
+          conversation_id: { type: 'string', dynamic_variable: 'system__conversation_id' },
+        },
+        required: ['ostatni_krok'],
+      },
+    },
+  };
+}
+
 function contextToolConfig(toolSecretId) {
   return {
     type: 'webhook',
@@ -230,10 +270,12 @@ function agentBody({ toolIds, webhookId, initSecret, existing, knowledge }) {
     tags: ['halohub', 'hackyeah-2026'],
     conversation_config: {
       agent: {
-        first_message: FIRST_MESSAGE.pl,
+        // Set by the initiation webhook: the project intro for new callers, a short greeting in their
+        // language for returning ones. The placeholder covers the web widget (no webhook).
+        first_message: '{{powitanie}}',
         language: 'pl',
         dynamic_variables: {
-          dynamic_variable_placeholders: { czy_powrot: 'nie', poprzedni_kontekst: '' },
+          dynamic_variable_placeholders: { czy_powrot: 'nie', poprzedni_kontekst: '', powitanie: FIRST_MESSAGE.pl },
         },
         prompt: {
           prompt,
@@ -374,7 +416,7 @@ async function findAgent() {
 async function main() {
   if (DRY) {
     console.log(JSON.stringify({
-      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>'), placesToolConfig('<secret_id>'), ropsToolConfig('<secret_id>')],
+      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>'), placesToolConfig('<secret_id>'), ropsToolConfig('<secret_id>'), progressToolConfig('<secret_id>')],
       agent: agentBody({ toolIds: ['<tool_ids>'], webhookId: '<webhook_id>', initSecret: '<HALOHUB_INIT_SECRET>' }),
     }, null, 2));
     return;
@@ -389,6 +431,7 @@ async function main() {
     await ensureTool(contextToolConfig(toolSecretId)),
     await ensureTool(placesToolConfig(toolSecretId)),
     await ensureTool(ropsToolConfig(toolSecretId)),
+    await ensureTool(progressToolConfig(toolSecretId)),
   ];
   const webhookId = await ensureWebhook();
   const knowledge = await ensureKnowledge();
