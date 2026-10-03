@@ -1,21 +1,10 @@
 'use server';
 
-import { cookies, headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { panelApi } from '@/lib/api';
-import { ADMIN_COOKIE, isAdmin } from '@/lib/auth';
 import { STATUSY } from '@/lib/types';
 
 export type ActionState = { ok: boolean; message: string; data?: Record<string, number> } | null;
-
-/** Viewing is public; every change needs the panel password (login cookie or Basic auth). */
-async function guard(): Promise<ActionState> {
-  const [h, c] = await Promise.all([headers(), cookies()]);
-  if (!(await isAdmin(h.get('authorization'), c.get(ADMIN_COOKIE)?.value))) {
-    return { ok: false, message: 'unauthorized' };
-  }
-  return null;
-}
 
 const done = (r: { ok: true } | { ok: false; error: string }, data?: Record<string, number>): ActionState => {
   revalidatePath('/', 'layout');
@@ -23,8 +12,6 @@ const done = (r: { ok: true } | { ok: false; error: string }, data?: Record<stri
 };
 
 export async function updateTopicAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const denied = await guard();
-  if (denied) return denied;
   const id = String(form.get('id') ?? '');
   const status = String(form.get('status') ?? '');
   const notatka = String(form.get('notatka') ?? '');
@@ -33,24 +20,18 @@ export async function updateTopicAction(_: ActionState, form: FormData): Promise
 }
 
 export async function publishAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const denied = await guard();
-  if (denied) return denied;
   const id = String(form.get('id') ?? '');
   if (!id) return { ok: false, message: 'invalid input' };
   return done(await panelApi.publish(id));
 }
 
 export async function jobAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const denied = await guard();
-  if (denied) return denied;
   const job = String(form.get('job') ?? '');
   if (job !== 'tematy' && job !== 'raport-dzienny' && job !== 'ingest') return { ok: false, message: 'invalid job' };
   return done(await panelApi.job(job));
 }
 
 export async function demoAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const denied = await guard();
-  if (denied) return denied;
   if (form.get('op') === 'delete') return done(await panelApi.deleteDemo());
   const r = await panelApi.seedDemo();
   return done(r, r.ok ? r.data ?? undefined : undefined);

@@ -9,7 +9,7 @@ backend directly and never sees the admin token.
 ```bash
 cp .env.example .env.local   # adjust values
 npm install
-npm run dev                  # http://localhost:3100/pl  (panel: /pl/panel, any user + PANEL_PASSWORD)
+npm run dev                  # http://localhost:3100/pl  (panel: /pl/panel, open to everyone)
 ```
 
 Production build: `npm run build && npm start` (port 3100 locally; Docker uses `PORT`, default 3000).
@@ -20,7 +20,6 @@ Production build: `npm run build && npm start` (port 3100 locally; Docker uses `
 |---|---|
 | `HALOHUB_API_URL` | Backend base URL, e.g. `http://localhost:3000` (default). Server-side only. |
 | `HALOHUB_ADMIN_TOKEN` | Bearer for `/halohub/api/*` and `/halohub/jobs/*` (panel data, publish, jobs, demo data). |
-| `PANEL_PASSWORD` | HTTP Basic password for `/[lang]/panel/**` and `/api/panel/**` (any username). Unset → 503. |
 
 ## Routes
 

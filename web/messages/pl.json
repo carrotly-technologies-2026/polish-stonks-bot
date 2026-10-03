@@ -58,10 +58,7 @@
     "publicReport": "Raport publiczny",
     "citizenPage": "Dla mieszkańców",
     "csvMetrics": "Metryki (CSV)",
-    "csvTopics": "Tematy (CSV)",
-    "login": "Zaloguj do edycji",
-    "logout": "Wyloguj",
-    "editMode": "Tryb edycji · wyloguj"
+    "csvTopics": "Tematy (CSV)"
   },
   "errors": {
     "backendTitle": "Nie udało się pobrać danych",
@@ -302,8 +299,7 @@
     "viewPublic": "Otwórz stronę publiczną",
     "colPeriod": "Okres",
     "colCreated": "Utworzono",
-    "colTopics": "Tematy",
-    "loginRequired": "Zaloguj się do edycji (przycisk w prawym górnym rogu), aby zmieniać dane."
+    "colTopics": "Tematy"
   },
   "categories": {
     "BARIERA_FIZYCZNA": "Bariera fizyczna",

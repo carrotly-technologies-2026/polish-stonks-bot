@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, ListOrdered, Lock,
-  LockOpen, Megaphone, Menu, Phone, Workflow,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, ListOrdered,
+  Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
-import { ADMIN_UI_COOKIE } from '@/lib/auth';
 import { globalQuery } from '@/lib/filters';
 import { GlobalFilters } from './GlobalFilters';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -20,26 +19,6 @@ const SECTIONS = [
   { key: 'pipeline', items: [{ seg: '/pipeline', key: 'pipeline', Icon: Workflow }, { seg: '/wiedza', key: 'knowledge', Icon: BookOpen }] },
   { key: 'publishing', items: [{ seg: '/publikacje', key: 'publications', Icon: Megaphone }, { seg: '/otwarte-dane', key: 'openData', Icon: Database }] },
 ] as const;
-
-/** "Edit mode" switch: viewing is public, changes need the panel password. */
-function EditMode() {
-  const t = useTranslations('nav');
-  const pathname = usePathname();
-  const [admin, setAdmin] = useState(false);
-  useEffect(() => {
-    setAdmin(document.cookie.split('; ').some((c) => c === `${ADMIN_UI_COOKIE}=1`));
-  }, []);
-  const next = encodeURIComponent(pathname);
-  return admin ? (
-    <a href={`/admin/logout?next=${next}`} className="btn btn-tonal !min-h-9" title={t('logout')}>
-      <LockOpen size={16} aria-hidden /> <span className="hidden sm:inline">{t('editMode')}</span>
-    </a>
-  ) : (
-    <a href={`/admin/login?next=${next}`} className="btn btn-outline !min-h-9">
-      <Lock size={16} aria-hidden /> <span className="hidden sm:inline">{t('login')}</span>
-    </a>
-  );
-}
 
 function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const t = useTranslations('nav');
@@ -119,7 +98,6 @@ export function PanelShell({ children }: { children: ReactNode }) {
           <Suspense fallback={null}><GlobalFilters /></Suspense>
           <Suspense fallback={null}><LanguageSwitcher /></Suspense>
           <ThemeToggle />
-          <EditMode />
         </div>
       </header>
       <div className="flex">
