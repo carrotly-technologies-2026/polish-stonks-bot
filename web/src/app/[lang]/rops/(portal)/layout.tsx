@@ -14,14 +14,14 @@ const SECTIONS = [
   { k: 'kontakt', href: ROPS_LINKS.kontakt },
 ] as const;
 
-/** Demo portal shell: neutral public-sector look (no ROPS logo or graphics) and a disclaimer on every page. */
+/** Demo portal shell: ROPS palette via `.rops-theme` (no ROPS logo or graphics) and a disclaimer on every page. */
 export default async function RopsLayout({ children, params }: { children: ReactNode; params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   setRequestLocale(lang);
   const t = await getTranslations('rops');
   const base = `/${lang}/rops`;
   return (
-    <>
+    <div className="rops-theme contents">
       <p role="note" className="flex items-start justify-center gap-2 bg-[var(--warning-container)] px-4 py-2 text-center text-[0.8125rem] leading-[1.25rem] text-[var(--on-surface)]">
         <FlaskConical size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
         <span>{t('disclaimer')}</span>
@@ -83,6 +83,6 @@ export default async function RopsLayout({ children, params }: { children: React
           <p role="note" className="small border-t border-[var(--outline-variant)] pt-4">{t('disclaimer')}</p>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

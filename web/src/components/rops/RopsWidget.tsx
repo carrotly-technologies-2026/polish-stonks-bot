@@ -139,7 +139,7 @@ export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: 
 
       <section
         id="czat" role="dialog" aria-modal="false" aria-labelledby="rw-title" onKeyDown={onPanelKey}
-        className={`rops-widget fixed inset-x-0 bottom-0 z-[60] ${open ? 'flex' : 'hidden'} h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border border-[var(--outline-variant)] bg-surface text-[var(--on-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.28)] sm:inset-x-auto sm:right-5 sm:bottom-[6.25rem] sm:h-[min(600px,calc(100dvh-8rem))] sm:w-[380px] sm:rounded-2xl`}
+        className={`rops-widget rops-light fixed inset-x-0 bottom-0 z-[60] ${open ? 'flex' : 'hidden'} h-[85dvh] max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border border-[var(--outline-variant)] bg-surface text-[var(--on-surface)] shadow-[0_8px_32px_rgba(0,0,0,0.28)] sm:inset-x-auto sm:right-5 sm:bottom-[6.25rem] sm:h-[min(600px,calc(100dvh-8rem))] sm:w-[380px] sm:rounded-2xl`}
       >
         <header className="flex items-center gap-2 bg-[var(--primary)] py-2.5 pr-1.5 pl-3 text-[var(--on-primary)]">
           <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--on-primary)] text-[var(--primary)]"><Bot size={20} /></span>
@@ -270,11 +270,11 @@ export function RopsWidget({ lang, agentId, phone, phoneTel, initialQuestion }: 
       <button
         ref={launcherRef} type="button" onClick={() => (open ? minimize() : show())}
         aria-expanded={open} aria-controls="czat" aria-label={open ? t('minimize') : unread ? t('openUnread') : t('open')}
-        className={`fixed right-5 bottom-5 z-[61] size-[60px] place-items-center rounded-full bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform hover:scale-105 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] ${open ? 'hidden sm:grid' : 'grid'}`}
+        className={`rops-light fixed right-5 bottom-5 z-[61] size-[60px] place-items-center rounded-full bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform hover:scale-105 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] ${open ? 'hidden sm:grid' : 'grid'}`}
       >
         {open ? <Minus size={28} aria-hidden /> : <MessageCircle size={28} aria-hidden />}
         {unread && !open && (
-          <span aria-hidden className="absolute top-0.5 right-0.5 size-3.5 rounded-full border-2 border-[var(--surface)] bg-[#d93025]" />
+          <span aria-hidden className="absolute top-0.5 right-0.5 size-3.5 rounded-full border-2 border-[var(--surface)] bg-[var(--error)]" />
         )}
       </button>
     </>
