@@ -86,6 +86,7 @@ export interface Publikacja extends PublikacjaSkrot {
   raport_md: string | null; jezyki_raportu: string[];
 }
 
+/** `elevenlabs_agent_id` is MayAI: one voice agent (and one phone number) for the city guide and the ROPS assistant. */
 export interface Info { numer: string; numer_tel: string; elevenlabs_agent_id: string | null }
 
 export interface RozmowaSkrot {
