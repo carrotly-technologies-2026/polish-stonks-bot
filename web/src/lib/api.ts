@@ -10,10 +10,14 @@ export type Result<T> =
 
 const base = () => (process.env.HALOHUB_API_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
-type Opts = { admin?: boolean; method?: string; body?: unknown; revalidate?: number };
+type Opts = {
+  admin?: boolean; method?: string; body?: unknown; revalidate?: number;
+  /** Extra request headers (e.g. x-forwarded-for of the end user for backend rate limits). */
+  headers?: Record<string, string>; timeoutMs?: number;
+};
 
 export async function call<T>(path: string, opts: Opts = {}): Promise<Result<T>> {
-  const headers: Record<string, string> = { accept: 'application/json' };
+  const headers: Record<string, string> = { accept: 'application/json', ...opts.headers };
   if (opts.admin) {
     const token = process.env.HALOHUB_ADMIN_TOKEN;
     if (!token) return { ok: false, status: null, error: 'HALOHUB_ADMIN_TOKEN is not set' };
@@ -25,7 +29,7 @@ export async function call<T>(path: string, opts: Opts = {}): Promise<Result<T>>
       method: opts.method ?? 'GET',
       headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 10_000),
       ...(opts.revalidate ? { next: { revalidate: opts.revalidate } } : { cache: 'no-store' }),
     });
     if (!res.ok) return { ok: false, status: res.status, error: `${res.status} ${res.statusText}` };
