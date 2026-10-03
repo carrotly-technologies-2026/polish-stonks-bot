@@ -8,7 +8,7 @@ import { DataTable, type Row } from '@/components/DataTable';
 import { MetricTile } from '@/components/MetricTile';
 import { TimeSeries } from '@/components/charts/TimeSeries';
 import { RefreshButton } from '@/components/RefreshButton';
-import { DemoLabel, ErrorCard, PageHeader } from '@/components/ui';
+import { ErrorCard, PageHeader } from '@/components/ui';
 
 export default async function Jezyki({ params, searchParams }: {
   params: Promise<{ lang: string }>; searchParams: Promise<SearchParams>;
@@ -38,7 +38,6 @@ export default async function Jezyki({ params, searchParams }: {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="small">{tc('period', { from: fmtDate(l, m.okres_od, true), to: fmtDate(l, m.okres_do, true) })}</p>
-              <DemoLabel show={m.demo} />
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <MetricTile label={t('gap')} value={pp(m.luka_jezykowa_dotarcia)} caption={t('gapDesc')} />

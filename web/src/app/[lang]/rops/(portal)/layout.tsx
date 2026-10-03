@@ -75,7 +75,6 @@ export default async function RopsLayout({ children, params }: { children: React
               <ul className="flex flex-col gap-1">
                 <li><Link href={base}>{t('embed.backToDemo')}</Link></li>
                 <li><Link href={`${base}/szukaj`}>{t('navSearch')}</Link></li>
-                <li><Link href={`/${lang}/info`}>{t('footerMayai')}</Link></li>
                 <li><Link href={`/${lang}/panel`}>{t('footerPanel')}</Link></li>
               </ul>
             </div>

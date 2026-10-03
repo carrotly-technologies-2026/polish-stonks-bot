@@ -9,7 +9,7 @@ import { normaliseTranscript } from '@/lib/transcript';
 import type { RozmowaSkrot, RozmowaSzczegoly } from '@/lib/types';
 import { Chip } from '@/components/Chip';
 import { RefreshButton } from '@/components/RefreshButton';
-import { DemoLabel, ErrorCard, PageHeader, Panel } from '@/components/ui';
+import { ErrorCard, PageHeader, Panel } from '@/components/ui';
 
 const clock = (s: number | null) => (s === null ? '' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`);
 
@@ -47,7 +47,7 @@ export default async function Conversation({ params, searchParams }: {
   return (
     <>
       <PageHeader title={`${t('conversation')} ${r.conversation_id}`} crumbs={crumbs} actions={<RefreshButton />}
-        lead={<span className="flex flex-wrap items-center gap-2">{reached}{r.czy_powrot && <Chip tone="info" label={t('returnCall')} />}<DemoLabel show={r.demo} /></span>} />
+        lead={<span className="flex flex-wrap items-center gap-2">{reached}{r.czy_powrot && <Chip tone="info" label={t('returnCall')} />}</span>} />
 
       {!detail.ok && (
         <div role="status" className="panel panel-pad mb-4 !border-[var(--warning)]">

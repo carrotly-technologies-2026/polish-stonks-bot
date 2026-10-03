@@ -66,8 +66,7 @@ export function DemoRibbon({ lang }: { lang: string }) {
       <FlaskConical size={14} className="shrink-0 text-[var(--warning)]" aria-hidden />
       <p className="min-w-0">
         {t('ribbon')}{' · '}
-        <Link href={`/${lang}/rops/szukaj`} className="font-medium whitespace-nowrap">{t('ribbonSearch')}</Link>{' · '}
-        <Link href={`/${lang}/info`} className="font-medium whitespace-nowrap">{t('ribbonInfo')}</Link>
+        <Link href={`/${lang}/rops/szukaj`} className="font-medium whitespace-nowrap">{t('ribbonSearch')}</Link>
       </p>
       <button type="button" onClick={hide} aria-label={t('ribbonHide')} title={t('ribbonHide')}
         className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--on-surface-variant)] hover:bg-[var(--hover)]">

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, LibraryBig, ListOrdered,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Languages, LibraryBig, ListOrdered,
   Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
 import { globalQuery } from '@/lib/filters';
@@ -50,7 +50,6 @@ function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
         <ul className="flex flex-col gap-0.5">
           {[
             { href: `/${locale}/raport`, key: 'publicReport', Icon: FileText },
-            { href: `/${locale}/info`, key: 'citizenPage', Icon: Info },
             { href: `/${locale}/rops`, key: 'rops', Icon: LibraryBig },
             { href: '/api/open-data/metryki.csv', key: 'csvMetrics', Icon: FileSpreadsheet },
             { href: '/api/open-data/tematy.csv', key: 'csvTopics', Icon: FileSpreadsheet },
@@ -93,7 +92,7 @@ export function PanelShell({ children }: { children: ReactNode }) {
             <Menu size={22} aria-hidden />
           </button>
           <Link href={`/${locale}/panel`} className="mr-auto flex min-h-10 items-center gap-2 text-[1.125rem] !text-[var(--on-surface)] no-underline">
-            <span aria-hidden className="grid size-7 place-items-center rounded-md bg-[var(--primary)] text-sm font-bold text-[var(--on-primary)]">H</span>
+            <span aria-hidden className="grid size-7 place-items-center rounded-md bg-[var(--primary)] text-sm font-bold text-[var(--on-primary)]">M</span>
             <span>{tc('appName')} <span className="muted">· {t('analytics')}</span></span>
           </Link>
           <Suspense fallback={null}><GlobalFilters /></Suspense>

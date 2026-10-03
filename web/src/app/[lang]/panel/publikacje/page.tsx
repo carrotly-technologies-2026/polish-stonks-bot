@@ -4,7 +4,7 @@ import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
 import { panelApi } from '@/lib/api';
 import { param, type SearchParams } from '@/lib/filters';
 import { fmtDate } from '@/lib/format';
-import { demoAction, jobAction } from '@/app/actions';
+import { jobAction } from '@/app/actions';
 import { ActionButton } from '@/components/ActionButton';
 import { DataTable, type Row } from '@/components/DataTable';
 import { PublicReport } from '@/components/PublicReport';
@@ -34,8 +34,6 @@ export default async function Publikacje({ params, searchParams }: {
             <Plus size={18} aria-hidden />{t('generateDraft')}
           </ActionButton>
           <ActionButton action={jobAction} fields={{ job: 'tematy' }}>{t('recalcTopics')}</ActionButton>
-          <ActionButton action={demoAction} fields={{ op: 'seed' }}>{t('seedDemo')}</ActionButton>
-          <ActionButton action={demoAction} fields={{ op: 'delete' }} variant="danger" confirm={t('deleteDemoConfirm')}>{t('deleteDemo')}</ActionButton>
           <Link href={`/${lang}/raport`} className="btn btn-text">{t('viewPublic')} <ExternalLink size={16} aria-hidden /></Link>
           <RefreshButton />
         </>} />
