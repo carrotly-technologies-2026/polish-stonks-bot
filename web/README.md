@@ -28,6 +28,9 @@ Production build: `npm run build && npm start` (port 3100 locally; Docker uses `
 - ROPS knowledge assistant (prototype): `/[lang]/rops` (chat line with cited answers + MayAI phone number),
   `/[lang]/rops/szukaj` (advanced search, state in the URL). Proxies: `/api/rops/{zapytaj,szukaj,facety}` →
   `/halohub/public/rops/*` (client IP forwarded; 404 from the backend shows "asystent jest aktualizowany").
+- Idea creator ("Kreator pomysłów") inside the ROPS chat widget: a five-step idea card with an assistant that hints at
+  each text field and shows similar innovations. Proxies: `/api/rops/pomysl` → `/halohub/public/rops/pomysly`,
+  `/api/rops/kreator` → `/halohub/public/rops/kreator/asystent`. Submitted cards: `/[lang]/panel/pomysly` (no contact data).
 - Panel: `/[lang]/panel` (overview), `/priorytety`, `/jezyki`, `/wiedza`, `/publikacje`.
   Filters live in the URL: `?zakres=24h|7d|30d&jezyk=pl|en|uk`.
 

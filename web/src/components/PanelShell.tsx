@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Languages, LibraryBig, ListOrdered,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Languages, LibraryBig, Lightbulb, ListOrdered,
   Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
 import { globalQuery } from '@/lib/filters';
@@ -15,7 +15,7 @@ import { ThemeToggle } from './ThemeToggle';
 
 const SECTIONS = [
   { key: 'monitoring', items: [{ seg: '', key: 'overview', Icon: Gauge }, { seg: '/jezyki', key: 'languages', Icon: Languages }] },
-  { key: 'data', items: [{ seg: '/priorytety', key: 'priorities', Icon: ListOrdered }, { seg: '/rozmowy', key: 'conversations', Icon: Phone }] },
+  { key: 'data', items: [{ seg: '/priorytety', key: 'priorities', Icon: ListOrdered }, { seg: '/rozmowy', key: 'conversations', Icon: Phone }, { seg: '/pomysly', key: 'ideas', Icon: Lightbulb }] },
   { key: 'pipeline', items: [{ seg: '/pipeline', key: 'pipeline', Icon: Workflow }, { seg: '/wiedza', key: 'knowledge', Icon: BookOpen }] },
   { key: 'publishing', items: [{ seg: '/publikacje', key: 'publications', Icon: Megaphone }, { seg: '/otwarte-dane', key: 'openData', Icon: Database }] },
 ] as const;

@@ -5,10 +5,11 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { useTranslations } from 'next-intl';
 import {
-  AlertTriangle, Bot, Loader2, Maximize2, MessageCircle, MessageSquarePlus, Minus, Phone, RotateCcw, SendHorizontal,
-  Sparkles,
+  AlertTriangle, Bot, Lightbulb, Loader2, Maximize2, MessageCircle, MessageSquarePlus, Minus, Phone, RotateCcw,
+  SendHorizontal, Sparkles,
 } from 'lucide-react';
 import { linkCitations } from '@/lib/rops';
+import { IdeaWizard } from './IdeaWizard';
 import { SourceCard } from './SourceCard';
 import { useRopsChat, type Msg } from './useRopsChat';
 
@@ -70,6 +71,7 @@ export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(true);
   const [input, setInput] = useState('');
+  const [mode, setMode] = useState<'chat' | 'idea'>('chat');
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -143,7 +145,11 @@ export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
             <h2 id="rw-title" className="truncate text-[0.9375rem] leading-[1.25rem] font-medium">{t('title')}</h2>
             <p className="truncate text-[0.75rem] leading-[1rem] opacity-90">{t('sub')}</p>
           </div>
-          {msgs.length > 0 && (
+          <button type="button" onClick={() => setMode((m) => (m === 'idea' ? 'chat' : 'idea'))} aria-pressed={mode === 'idea'}
+            className="rw-icon" title={mode === 'idea' ? t('ideaClose') : t('ideaOpen')} aria-label={mode === 'idea' ? t('ideaClose') : t('ideaOpen')}>
+            {mode === 'idea' ? <MessageCircle size={18} aria-hidden /> : <Lightbulb size={18} aria-hidden />}
+          </button>
+          {mode === 'chat' && msgs.length > 0 && (
             <button type="button" onClick={newChat} className="rw-icon" title={tc('newChat')} aria-label={tc('newChat')}>
               <MessageSquarePlus size={18} aria-hidden />
             </button>
@@ -156,6 +162,7 @@ export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
           </button>
         </header>
 
+        {mode === 'idea' ? <IdeaWizard lang={lang} onClose={() => setMode('chat')} /> : (<>
         <div ref={logRef} role="log" aria-live="polite" aria-relevant="additions" aria-label={tc('log')}
           className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [overflow-anchor:none] px-3 py-3">
           <div className="flex gap-2">
@@ -174,6 +181,12 @@ export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
                   </button>
                 </li>
               ))}
+              <li>
+                <button type="button" onClick={() => setMode('idea')}
+                  className="btn btn-tonal !min-h-8 !px-3 !text-[0.8125rem] !whitespace-normal text-left">
+                  <Lightbulb size={14} aria-hidden className="shrink-0" />{t('idea')}
+                </button>
+              </li>
             </ul>
           )}
           {msgs.map((m, i) => {
@@ -253,6 +266,7 @@ export function RopsWidget({ lang, phone, phoneTel, initialQuestion }: {
             </p>
           )}
         </div>
+        </>)}
       </section>
 
       <button

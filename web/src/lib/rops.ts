@@ -19,6 +19,27 @@ export interface OdpowiedzRops { odpowiedz: string; zrodla: ZrodloOdpowiedzi[]; 
 
 export interface HistoriaRops { rola: 'uzytkownik' | 'asystent'; tresc: string }
 
+/** Idea creator ("Kreator pomysłów"): the idea card (fiszka) written in the chat widget. */
+export const IDEA_TYPES = ['pomysl', 'dobra_praktyka'] as const;
+export const IDEA_STAGES = ['pomysl', 'prototyp', 'testy', 'wdrozone'] as const;
+/** Fields the creator's assistant can help with. */
+export const IDEA_HINT_STEPS = ['opis', 'istota', 'dla_kogo'] as const;
+export type IdeaHintStep = (typeof IDEA_HINT_STEPS)[number];
+
+export interface SzkicPomyslu {
+  typ: (typeof IDEA_TYPES)[number]; tytul: string; opis: string; istota: string; dla_kogo: string;
+  /** Polish category labels of the ROPS library (keys of CATEGORY_KEYS). */
+  odbiorcy: string[]; etap: (typeof IDEA_STAGES)[number] | '';
+}
+export const EMPTY_IDEA: SzkicPomyslu = { typ: 'pomysl', tytul: '', opis: '', istota: '', dla_kogo: '', odbiorcy: [], etap: '' };
+export const IDEA_LIMITS = { tytul: 120, opis: 800, istota: 800, dla_kogo: 400 } as const;
+
+export interface PomyslZgloszony { id: string; numer: string; status: string }
+/** Without the LLM only `podobne` comes back. */
+export interface PodpowiedzKreatora { wskazowka: string | null; propozycja: string | null; podobne: WynikRops[]; model: string | null }
+
+export const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 /** Error codes returned by our /api/rops/* route handlers. */
 export type RopsError = 'unavailable' | 'rate_limited' | 'failed' | 'invalid';
 
@@ -36,6 +57,7 @@ export const ROPS_LINKS = {
   publikacje: `${ROPS}/innowacje-spoleczne/publikacje-ze-swiata-innowacji`,
   kontakt: `${ROPS}/kontakt/regionalny-osrodek-polityki-spolecznej-w-krakowie`,
   kontaktIs: `${ROPS}/kontakt/dzial-innowacji-spolecznych`,
+  canvas: `${ROPS}/mpliki/IS/Moj_folder/INNO_AGH_-_SOCIAL_CANVAS.pdf`,
 } as const;
 
 /** Some crawled PDFs have the file path as their title: show a readable file name instead. */

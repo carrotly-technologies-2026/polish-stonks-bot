@@ -89,6 +89,13 @@ export interface Publikacja extends PublikacjaSkrot {
 /** `elevenlabs_agent_id` is MayAI: one voice agent (and one phone number) for the city guide and the ROPS assistant. */
 export interface Info { numer: string; numer_tel: string; elevenlabs_agent_id: string | null }
 
+/** Idea card from the idea creator in the ROPS chat widget; the API never returns contact data. */
+export interface Pomysl {
+  id: string; numer: string; typ: 'pomysl' | 'dobra_praktyka'; tytul: string; opis: string; istota: string;
+  dla_kogo: string; odbiorcy: string[]; etap: string; jezyk: string | null; status: string; ma_kontakt: boolean;
+  utworzono: string;
+}
+
 export interface RozmowaSkrot {
   id: string; conversation_id: string; typ_uzytkownika: string | null; jezyk: string | null;
   cel_podrozy: string | null; czy_dotarl: boolean | null; czas_trwania_s: number | null;

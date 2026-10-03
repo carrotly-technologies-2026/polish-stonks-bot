@@ -2,8 +2,8 @@ import 'server-only';
 import { headers } from 'next/headers';
 import { call, type Result } from './api';
 import {
-  PAGE_SIZE, type FacetyRops, type HistoriaRops, type OdpowiedzRops, type RopsError, type SearchState, type SzukajRops,
-  type WynikRops,
+  PAGE_SIZE, type FacetyRops, type HistoriaRops, type IdeaHintStep, type OdpowiedzRops, type PodpowiedzKreatora,
+  type PomyslZgloszony, type RopsError, type SearchState, type SzukajRops, type WynikRops,
 } from './rops';
 
 /** End-user IP, forwarded so the backend rate-limits per resident instead of per frontend server. */
@@ -89,4 +89,14 @@ export function ask(pytanie: string, historia: HistoriaRops[], ip?: string) {
   return call<OdpowiedzRops>('/public/rops/zapytaj', {
     method: 'POST', body: { pytanie, historia }, headers: fwd(ip), timeoutMs: 30_000,
   });
+}
+
+/** Idea creator: stores an idea card; the backend validates it (400) and rate-limits per IP (429). */
+export function submitIdea(body: Record<string, unknown>, ip?: string) {
+  return call<PomyslZgloszony>('/public/rops/pomysly', { method: 'POST', body, headers: fwd(ip), timeoutMs: 15_000 });
+}
+
+/** Idea creator assistant: hint, proposed text and similar innovations for one field of the card. */
+export function ideaHint(body: { krok: IdeaHintStep; szkic: Record<string, unknown>; pytanie?: string; jezyk?: string }, ip?: string) {
+  return call<PodpowiedzKreatora>('/public/rops/kreator/asystent', { method: 'POST', body, headers: fwd(ip), timeoutMs: 50_000 });
 }

@@ -1,6 +1,7 @@
 import 'server-only';
 import type {
-  Info, Luki, Metryki, Pipeline, Publikacja, PublikacjaSkrot, RozmowaSkrot, RozmowaSzczegoly, Temat, TematSzczegoly,
+  Info, Luki, Metryki, Pipeline, Pomysl, Publikacja, PublikacjaSkrot, RozmowaSkrot, RozmowaSzczegoly, Temat,
+  TematSzczegoly,
 } from './types';
 
 /** Result of a backend call: never throws, so pages can render friendly error states. */
@@ -80,6 +81,7 @@ export const panelApi = {
     call<Temat>(`/api/tematy/${encodeURIComponent(id)}`, { ...ADMIN, method: 'PATCH', body }),
   conversations: (limit = 200) => call<RozmowaSkrot[]>(`/api/rozmowy${qs({ limit })}`, ADMIN),
   conversation: (id: string) => call<RozmowaSzczegoly>(`/api/rozmowy/${encodeURIComponent(id)}`, ADMIN),
+  ideas: (limit = 200) => call<Pomysl[]>(`/api/pomysly${qs({ limit })}`, ADMIN),
   pipeline: () => call<Pipeline>('/api/pipeline', ADMIN),
   gaps: (od: string, d: string) => call<Luki>(`/api/wiedza/luki${qs({ od, do: d })}`, ADMIN),
   drafts: () => call<PublikacjaSkrot[]>('/api/publikacje?status=szkic', ADMIN),
