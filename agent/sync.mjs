@@ -22,6 +22,7 @@ const TOOL_NAME = 'szukaj_wiedzy';
 const TRANSIT_TOOL = 'znajdz_polaczenie';
 const CONTEXT_TOOL = 'kontekst_rozmowy';
 const PLACES_TOOL = 'polec_miejsca';
+const ROPS_TOOL = 'szukaj_w_rops';
 const PLACE_KINDS = ['restauracja', 'kawiarnia', 'bar', 'szybkie_jedzenie', 'lody', 'atrakcja', 'muzeum', 'park', 'punkt_widokowy',
   'toaleta', 'apteka', 'bankomat', 'kantor', 'informacja_turystyczna', 'sklep_spozywczy', 'wycieczka'];
 const WEBHOOK_NAME = 'Halo, Hub! post-call';
@@ -156,6 +157,30 @@ function placesToolConfig(toolSecretId) {
           dla_wozka: { type: 'boolean', description: 'true, gdy potrzebne miejsce dostępne dla wózka.' },
         },
         required: ['kategoria'],
+      },
+    },
+  };
+}
+
+function ropsToolConfig(toolSecretId) {
+  return {
+    type: 'webhook',
+    name: ROPS_TOOL,
+    description:
+      'Przeszukuje WSZYSTKIE materiały ROPS w Krakowie: Bibliotekę Innowacji Społecznych, raporty z badań, Mapę Wyzwań ' +
+      'Społecznych i publikacje. Wywołaj przy pytaniach o raporty, dane, badania, wyzwania społeczne regionu albo gdy ' +
+      'rozmówca chce materiał lub plik do pobrania (pracownicy socjalni, organizacje, gminy). Zwraca do 3 wyników: ' +
+      'tytul, zrodlo, streszczenie, kontakt, pliki (nazwy PDF do pobrania), url.',
+    response_timeout_secs: 15,
+    api_schema: {
+      url: `${BACKEND}/halohub/tools/szukaj_w_rops`,
+      method: 'POST',
+      request_headers: secretHeader(toolSecretId),
+      request_body_schema: {
+        type: 'object',
+        description: 'Zapytanie do materiałów ROPS.',
+        properties: { pytanie: { type: 'string', description: 'Krótkie, konkretne pytanie po polsku.' } },
+        required: ['pytanie'],
       },
     },
   };
@@ -349,7 +374,7 @@ async function findAgent() {
 async function main() {
   if (DRY) {
     console.log(JSON.stringify({
-      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>'), placesToolConfig('<secret_id>')],
+      tools: [toolConfig('<secret_id>'), transitToolConfig('<secret_id>'), contextToolConfig('<secret_id>'), placesToolConfig('<secret_id>'), ropsToolConfig('<secret_id>')],
       agent: agentBody({ toolIds: ['<tool_ids>'], webhookId: '<webhook_id>', initSecret: '<HALOHUB_INIT_SECRET>' }),
     }, null, 2));
     return;
@@ -363,6 +388,7 @@ async function main() {
     await ensureTool(transitToolConfig(toolSecretId)),
     await ensureTool(contextToolConfig(toolSecretId)),
     await ensureTool(placesToolConfig(toolSecretId)),
+    await ensureTool(ropsToolConfig(toolSecretId)),
   ];
   const webhookId = await ensureWebhook();
   const knowledge = await ensureKnowledge();
