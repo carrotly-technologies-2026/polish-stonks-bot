@@ -16,6 +16,7 @@ export default async function PublicLayout({ children, params }: {
           <Link href={`/${lang}/panel`} className="btn btn-text">{t('panel')}</Link>
           <Link href={`/${lang}/raport`} className="btn btn-text">{t('report')}</Link>
           <Link href={`/${lang}/info`} className="btn btn-text">{t('citizenPage')}</Link>
+          <Link href={`/${lang}/rops`} className="btn btn-text">{t('rops')}</Link>
         </nav>
       </TopBar>
       <main id="main" className="mx-auto max-w-[72rem] px-4 pt-6 pb-16 md:px-6">{children}</main>
