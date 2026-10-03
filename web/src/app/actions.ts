@@ -30,9 +30,3 @@ export async function jobAction(_: ActionState, form: FormData): Promise<ActionS
   if (job !== 'tematy' && job !== 'raport-dzienny') return { ok: false, message: 'invalid job' };
   return done(await panelApi.job(job));
 }
-
-export async function demoAction(_: ActionState, form: FormData): Promise<ActionState> {
-  if (form.get('op') === 'delete') return done(await panelApi.deleteDemo());
-  const r = await panelApi.seedDemo();
-  return done(r, r.ok ? r.data ?? undefined : undefined);
-}

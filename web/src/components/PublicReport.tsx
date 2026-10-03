@@ -3,7 +3,7 @@ import { BarList } from './charts/BarList';
 import { Markdown } from './Markdown';
 import { MetricTile } from './MetricTile';
 import { TopicRow } from './TopicRow';
-import { DemoLabel, Muted, Panel } from './ui';
+import { Muted, Panel } from './ui';
 import { fmtDate, fmtDuration, fmtNumber, fmtPercent, sortedEntries } from '@/lib/format';
 import { label } from '@/lib/labels';
 import type { Metryki, Publikacja } from '@/lib/types';
@@ -38,7 +38,6 @@ export function PublicReport({ pub }: { pub: Publikacja }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="title">{tc('period', { from: fmtDate(l, pub.okres_od), to: fmtDate(l, pub.okres_do) })}</p>
-        <DemoLabel show={pub.demo || m.demo} />
         <p className="small w-full">
           {pub.opublikowano ? t('publishedAt', { date: fmtDate(l, pub.opublikowano, true) }) : t('notPublished')}
           {' · '}{t('definitions', { version: pub.wersja_definicji })}
