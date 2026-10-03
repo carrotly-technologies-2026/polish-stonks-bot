@@ -17,13 +17,18 @@ Zbuduj MVP zgodnie z tym dokumentem. Zasady:
    Nie pisz własnego silnika tras ani integracji z Google Maps.
 2. **Backend jest cienki.** Robi tylko to: odbiera webhook po rozmowie i zapisuje
    bariery, trzyma krótki kontekst rozmowy w Redis (TTL 1 h), żeby ponowny telefon
-   kontynuował trasę, wysyła SMS na prośbę agenta, generuje dzienny raport LLM i serwuje dashboard.
-3. Stack: Node 20 + TypeScript + Hono (lub Next.js API routes), Supabase (Postgres),
-   Redis (Upstash lub Redis na Railway) na kontekst rozmów,
-   frontend dashboardu w Next.js + Tailwind, deploy na Vercel / Railway.
+   kontynuował trasę, wysyła SMS na prośbę agenta, odpowiada na narzędzie `szukaj_wiedzy`
+   (RAG na danych hubMI / ROPS Kraków), liczy metryki i priorytety tematów, generuje dzienny
+   raport LLM, publikuje metryki i serwuje frontend.
+3. Stack: Node 20 + TypeScript + Hono (lub Next.js API routes), Supabase (Postgres + pgvector),
+   Redis (Upstash lub Redis na Railway) na kontekst rozmów i cache RAG,
+   frontend w Next.js 15 (App Router) + Tailwind w stylu Apple (sekcja 9), deploy na Vercel / Railway.
 4. Żadnych prawdziwych danych osobowych. Numer telefonu tylko jako hash.
-5. Dashboard zgodny z WCAG 2.1 AA (kontrast, fokus, etykiety, obsługa klawiaturą).
+5. Frontend zgodny z WCAG 2.1 AA (kontrast, fokus, etykiety, obsługa klawiaturą),
+   trzy języki interfejsu: polski, angielski, ukraiński.
 6. Każdy plik krótki i czytelny. Lepiej działająca prosta wersja niż rozbudowana niedziałająca.
+7. **Bot nie wymyśla wiedzy o pomocy i innowacjach.** Mówi tylko to, co zwróci `szukaj_wiedzy`,
+   i zawsze podaje źródło („według Biblioteki Innowacji Społecznych ROPS”).
 
 ---
 
@@ -35,27 +40,34 @@ flowchart LR
     TW -->|natywna integracja| EL[ElevenLabs Agent<br/>STT + LLM + TTS]
     EL -->|webhook inicjacji:<br/>pobierz kontekst| BE
     BE <-->|kontekst, TTL 1 h| RD[(Redis)]
-    EL <-->|RAG| KB[(Baza wiedzy<br/>dokumenty .md)]
+    EL <-->|RAG wbudowany| KB[(Baza wiedzy ElevenLabs<br/>dokumenty .md)]
     EL -->|tool: wyslij_sms| BE[Backend API]
+    EL -->|tool: szukaj_wiedzy| BE
+    SRC[hubMI / ROPS Kraków<br/>biblioteka innowacji, raporty,<br/>statystyki, mapa wyzwań] -->|crawl + PDF| ING[Ingest<br/>chunk + embed]
+    ING --> VEC[(Supabase pgvector<br/>wiedza_dokumenty,<br/>wiedza_fragmenty)]
+    BE <-->|wyszukiwanie hybrydowe| VEC
     BE -->|Messages API| TW
     TW -->|SMS| U
     EL -->|webhook po rozmowie| BE
     BE --> DB[(Supabase<br/>rozmowy, bariery)]
     CRON[Cron dzienny] --> BE
-    BE -->|LLM: raport| LLM[LLM API]
-    DB --> DASH[Dashboard<br/>dla miasta]
+    BE -->|LLM: raport, tematy| LLM[LLM API]
+    DB --> DASH[Panel miasta<br/>Next.js, styl Apple]
+    DB -->|zagregowane, zanonimizowane| PUB[Strona publiczna<br/>+ otwarte dane CSV/JSON]
 ```
 
 | Warstwa | Odpowiedzialność | Technologia |
 |---|---|---|
 | Telefonia | Numer, połączenia przychodzące, SMS | Twilio |
 | Rozmowa | Rozpoznanie mowy, LLM, synteza głosu, wiele języków | ElevenLabs Agents |
-| Wiedza | Dojazd na HackYeah, Kraków w pigułce, porady dostępności | Knowledge Base ElevenLabs |
+| Wiedza stała | Dojazd na HackYeah, Kraków w pigułce, porady dostępności | Knowledge Base ElevenLabs |
+| Wiedza z hubMI (RAG) | Biblioteka Innowacji Społecznych, raporty, mapa wyzwań, publikacje ROPS | Ingest + Supabase pgvector + narzędzie `szukaj_wiedzy` |
 | Ekstrakcja | Bariery z transkrypcji jako dane strukturalne | Analiza rozmowy ElevenLabs (data collection) |
-| Backend | Webhooki, SMS, raport, API dashboardu | Node + Hono |
+| Backend | Webhooki, SMS, RAG, tematy, raport, API panelu i otwarte dane | Node + Hono |
 | Kontekst | Stan ostatniej rozmowy dzwoniącego przez 1 h (dokąd jedzie, na którym kroku skończył) | Redis (Upstash / Railway) |
-| Dane | Rozmowy, bariery, raporty | Supabase Postgres |
-| Prezentacja | Ranking barier, wykresy, raport | Next.js dashboard |
+| Dane | Rozmowy, bariery, tematy, metryki, raporty, publikacje | Supabase Postgres |
+| Priorytety | Grupowanie barier w tematy, wynik priorytetu, rekomendacje z RAG | Job w backendzie + LLM |
+| Prezentacja | Panel miasta (metryki, priorytety, języki, luki w wiedzy) i strona publiczna | Next.js + Tailwind, design w stylu Apple, PL / EN / UK |
 
 ---
 
@@ -87,8 +99,8 @@ sequenceDiagram
 1. ElevenLabs wysyła webhook po rozmowie z transkrypcją i wynikami analizy (pola z sekcji 5).
 2. Backend weryfikuje podpis HMAC, parsuje `problemy_json`.
 3. Zapisuje jeden wiersz w `rozmowy` i po jednym wierszu w `bariery` na każdą barierę.
-4. Zapisuje kontekst rozmowy w Redis pod `ctx:{telefon_hash}` z TTL 3600 s (sekcja 8.5).
-5. Dashboard odświeża się (Supabase Realtime albo polling co 10 s).
+4. Zapisuje kontekst rozmowy w Redis pod `ctx:{telefon_hash}` z TTL 3600 s (sekcja 8.4).
+5. Panel odświeża się (Supabase Realtime albo polling co 10 s).
 
 ### 2.3 Ponowny telefon w ciągu godziny (kontekst z Redis)
 
@@ -117,11 +129,42 @@ sequenceDiagram
 - Brak kontekstu lub błąd Redis → zwykłe powitanie. Redis nigdy nie blokuje rozmowy
   (timeout odczytu ok. 300 ms).
 
-### 2.4 Raport dzienny
+### 2.4 Raport dzienny i publikacja
 
-1. Cron raz dziennie pobiera bariery z ostatnich 24 h.
-2. Wysyła je do LLM z promptem z sekcji 7.3.
-3. Zapisuje raport w `raporty`, dashboard pokazuje najnowszy.
+1. Cron co godzinę przelicza tematy i wynik priorytetu (sekcja 8.6).
+2. Cron raz dziennie bierze tematy i metryki z ostatnich 24 h, a dla 5 najważniejszych tematów
+   pyta RAG o pasujące rozwiązania z Biblioteki Innowacji.
+3. Wysyła to do LLM z promptem z sekcji 7.3 (raport po polsku, potem tłumaczenie EN i UK).
+4. Zapisuje raport w `raporty` i migawkę w `publikacje` ze statusem `szkic`.
+5. Urzędnik przegląda szkic w panelu i klika „Opublikuj” – migawka trafia na stronę publiczną
+   i do otwartych danych (sekcja 9.6). Na demo można włączyć automatyczną publikację.
+
+### 2.5 Pytanie o pomoc w rozmowie (RAG)
+
+```mermaid
+sequenceDiagram
+    participant U as Rozmówca
+    participant E as ElevenLabs Agent
+    participant B as Backend
+    participant R as Redis
+    participant V as pgvector
+    U->>E: „Mama jeździ na wózku, jest coś, co jej pomoże?”
+    E->>U: „Chwileczkę, sprawdzam.”
+    E->>B: tool szukaj_wiedzy(pytanie, grupa = wozek)
+    B->>R: GET rag:{hash pytania}
+    alt brak w cache
+        B->>V: wyszukiwanie hybrydowe, top 3
+        B->>R: SET rag:{hash} EX 3600
+    end
+    B-->>E: 1–3 wyniki: tytuł, streszczenie do przeczytania, kontakt, źródło
+    E->>U: jedno rozwiązanie, dwa zdania, źródło, „Wysłać link SMS-em?”
+    B->>B: zapis w wiedza_zapytania (bez numeru)
+```
+
+### 2.6 Zasilanie RAG (ingest)
+
+`npm run ingest` uruchamiany ręcznie przed demo, potem raz w tygodniu przez cron
+(`POST /jobs/ingest`). Szczegóły w sekcji 6.2.
 
 ---
 
@@ -132,7 +175,7 @@ sequenceDiagram
 2. W ElevenLabs: Agent → Phone Numbers → Import z Twilio (Account SID + Auth Token).
    ElevenLabs sam ustawia webhooki głosowe numeru, nie konfigurujesz TwiML ręcznie.
 3. SMS-y wysyła backend przez Twilio Messages API z tego samego numeru.
-4. Zapasowe wejście na demo: widget głosowy ElevenLabs na stronie dashboardu (działa bez numeru).
+4. Zapasowe wejście na demo: widget głosowy ElevenLabs na stronie publicznej (działa bez numeru).
 
 ---
 
@@ -146,11 +189,11 @@ sequenceDiagram
 | Czas oczekiwania na wypowiedź | wydłużony (seniorzy robią pauzy) |
 | Pierwsza wiadomość | „Cześć, tu Halo, Hub! Pomogę ci dotrzeć w Krakowie. Gdzie teraz jesteś?” (przy `czy_powrot = tak` prompt każe zacząć od kontynuacji) |
 | Zmienne dynamiczne | `poprzedni_kontekst` (domyślnie pusty), `czy_powrot` (domyślnie `nie`) |
-| Webhook inicjacji rozmowy | `POST {BACKEND_URL}/webhooks/elevenlabs/init` – zwraca kontekst z Redis (sekcja 8.5); włącz w Security → „Fetch conversation initiation data” dla połączeń Twilio |
+| Webhook inicjacji rozmowy | `POST {BACKEND_URL}/webhooks/elevenlabs/init` – zwraca kontekst z Redis (sekcja 8.4); włącz w Security → „Fetch conversation initiation data” dla połączeń Twilio |
 | Prompt systemowy | sekcja 7.1 |
 | Baza wiedzy | sekcja 6 |
 | Narzędzia systemowe | zakończenie rozmowy, przełączenie na numer człowieka (opcjonalnie) |
-| Narzędzie webhook | `wyslij_sms` (sekcja 8.2) |
+| Narzędzia webhook | `wyslij_sms` (sekcja 8.2), `szukaj_wiedzy` (sekcje 6.2, 7.4) |
 | Analiza: zbieranie danych | pola z sekcji 5 |
 | Webhook po rozmowie | `POST {BACKEND_URL}/webhooks/elevenlabs` z sekretem HMAC |
 
@@ -174,6 +217,7 @@ Opis każdego pola jest instrukcją dla LLM.
 | `czy_dotarl` | boolean | Czy z rozmowy wynika, że rozmówca dotarł lub wie, jak dotrzeć |
 | `kontekst_podsumowanie` | string | Maks. 3 zdania dla bota na wypadek ponownego telefonu: skąd i dokąd jedzie, na którym kroku trasy skończyliście, potrzeby (np. omija schody, ma walizkę). Bez danych osobowych i adresów prywatnych. |
 | `ostatni_krok` | string | Ostatni potwierdzony punkt trasy, np. „przystanek Rondo Mogilskie, tramwaj w stronę Arena”. Pusty, jeśli nie było trasy. |
+| `potrzeby_json` | string | Tablica JSON potrzeb wsparcia, o które pytał rozmówca, np. `[{"temat": "sprzęt dla osoby na wózku", "grupa": "wozek", "czy_znaleziono": true}]`. `[]`, jeśli żadnych. Zasila widok luk w wiedzy. |
 
 ### Schemat bariery
 
@@ -207,7 +251,9 @@ Opis każdego pola jest instrukcją dla LLM.
 
 ---
 
-## 6. Baza wiedzy (dokumenty .md wgrane do agenta)
+## 6. Wiedza bota
+
+### 6.1 Baza wiedzy ElevenLabs (dokumenty .md wgrane do agenta)
 
 | Dokument | Zawartość | Kto pisze |
 |---|---|---|
@@ -217,6 +263,61 @@ Opis każdego pola jest instrukcją dla LLM.
 | `oszustwa.md` | Schematy „na wnuczka”, „na policjanta”, co radzić | Zespół |
 
 Każdy fakt, którego nie jesteście pewni, oznaczcie jako „do potwierdzenia na miejscu”.
+
+### 6.2 RAG na danych hubMI / ROPS Kraków
+
+hubMI.pl (Hub Małopolskich Innowacji, Małopolska + ROPS Kraków, partner HackYeah) zbiera sześć
+źródeł. Zawartość dziś leży na rops.krakow.pl; hubmi.pl startuje 4.10.2026, więc adresy
+po starcie sprawdźcie ponownie.
+
+| Źródło | Adres (stan na 3.10.2026) | Format | Do czego służy |
+|---|---|---|---|
+| Biblioteka Innowacji Społecznych | `rops.krakow.pl/innowacje-spoleczne/biblioteka-innowacji-spolecznych/{kategoria}`, wpisy `{kategoria},{slug}` | HTML + PDF z modelem innowacji | **Rozmowa:** konkretne rozwiązania dla rozmówcy. **Raport:** rekomendacje dla miasta. |
+| Baza Raportów | `rops.krakow.pl/badania-analizy-raporty/raporty-z-badan` | PDF | Raport dzienny, kontekst tematów |
+| Internetowy Obserwator Statystyk Społecznych | `obserwator.rops.krakow.pl` | wskaźniki i tabele | Panel: tło statystyczne dzielnic i grup. Sprawdzić eksport CSV/API; w MVP ręcznie kilka wskaźników do .md |
+| Mapa Wyzwań Społecznych | `rops.krakow.pl/mpliki/IS/IWS_20/za._nr_2._Mapa_Wyzwa_Spoecznych.pdf` | PDF | Raport: powiązanie barier z wyzwaniami regionu |
+| Publikacje ze świata innowacji | `rops.krakow.pl/innowacje-spoleczne/publikacje-ze-swiata-innowacji` | HTML + PDF | Tło do raportu |
+| Canvas Innowacji, Tester innowacji | hubmi.pl (do sprawdzenia po starcie) | ? | Później |
+
+Kategorie Biblioteki mapujemy na `typ_uzytkownika` (filtr `grupa` w wyszukiwaniu):
+
+| Kategoria (slug) | `grupy` |
+|---|---|
+| `dla-seniorow` | `senior` |
+| `dla-osob-o-ograniczonej-mobilnosci` | `wozek`, `chodzik` |
+| `dla-osob-z-niepelnosprawnoscia-sensoryczna` | `senior`, `inny` |
+| `dla-cudzoziemcow` | `obcokrajowiec` |
+| `dla-dzieci-mlodziezy-i-rodziny` | `wozek_dzieciecy` |
+| `dla-zdrowia-i-medycyny`, `dla-rynku-pracy`, `dla-osob-w-kryzysie-bezdomnosci`, `dla-osob-z-niepelnosprawnoscia-intelektualna` | `inny` |
+
+**Pipeline zbierania (`scripts/ingest.ts`):**
+
+1. **Crawl.** Adresy startowe w `ingest/zrodla.ts`. Lista kategorii → linki wpisów → PDF-y
+   z `/mpliki/`. User-Agent `HaloHubBot (HackYeah 2026)`, 1 żądanie na sekundę, respektuj
+   `robots.txt`. Surowe pliki do `.cache/ingest/`, żeby ponowne uruchomienie nie pobierało wszystkiego.
+2. **Parsowanie.** HTML: tylko główna treść (cheerio, wytnij menu boczne – na rops.krakow.pl jest
+   ogromne i zaśmieci embeddingi). PDF: tekst przez `unpdf`; skany bez warstwy tekstu pomijamy w MVP.
+3. **Metadane.** `zrodlo`, `kategoria` (z URL), `grupy`, `tytul`, `url`, `kontakt` (jeśli jest na stronie),
+   `hash` treści.
+4. **Streszczenie do głosu.** LLM pisze 2 proste zdania na wpis (`glos_streszczenie`). Bot czyta je
+   zamiast surowego fragmentu – brzmi naturalnie i jest krótkie.
+5. **Chunking.** Ok. 800 tokenów, zakładka 100, cięcie po akapitach i nagłówkach. Każdy fragment
+   poprzedzony nagłówkiem „{tytuł} – {kategoria}”.
+6. **Embedding.** Model wielojęzyczny (np. `text-embedding-3-small`, 1536 wymiarów; inny model =
+   zmiana wymiaru w SQL). Pytania po angielsku i ukraińsku trafiają w polskie treści.
+7. **Upsert po `hash`.** Niezmieniony wpis pomijamy, zmieniony liczymy od nowa, zniknięty oznaczamy `aktywny = false`.
+
+**Podłączenie do bota:** narzędzie webhook `szukaj_wiedzy` w ElevenLabs →
+`POST /tools/szukaj_wiedzy` (sekcja 8.5). Wyniki są krótkie (maks. ok. 1500 znaków), bo agent
+głosowy płaci latencją za każdy token.
+
+**Plan B (brak czasu):** 20–30 najlepszych wpisów z Biblioteki jako pliki .md w bazie wiedzy
+ElevenLabs z włączonym RAG. Zero backendu, ale bez filtra po grupie, bez logu zapytań i bez
+rekomendacji w raporcie.
+
+**Zasady:** przeczytać `Zasady_wykorzystania_innowacji_MIIS.pdf` (link na każdej stronie wpisu)
+i podawać źródło przy każdej odpowiedzi. Jeśli warunki nie pozwalają na kopiowanie treści,
+przechowujemy tylko streszczenia i linki.
 
 ---
 
@@ -288,6 +389,19 @@ Gdy rozmówca wspomni o trudności (winda, schody, tablice, bilet, brak
 „Czy coś po drodze sprawiło trudność? Zbieramy takie sygnały, żeby
 miasto mogło je poprawić.”
 
+## Wiedza o pomocy i innowacjach (narzędzie szukaj_wiedzy)
+Gdy rozmówca pyta o pomoc, sprzęt, usługi lub programy dla seniorów,
+osób z niepełnosprawnościami, cudzoziemców albo rodzin – albo gdy
+zgłoszona bariera ma znane rozwiązanie – powiedz „Chwileczkę, sprawdzam”
+i wywołaj szukaj_wiedzy. Pytanie przekaż po polsku, grupę z rozmowy.
+- Mów tylko to, co zwróciło narzędzie. Niczego nie dopowiadaj.
+- Jedno rozwiązanie naraz, dwa zdania (pole glos_streszczenie), potem
+  źródło: „Według Biblioteki Innowacji Społecznych ROPS w Krakowie…”.
+- Zaproponuj SMS z linkiem (wyslij_sms, link z pola url).
+- Brak wyników → powiedz to wprost i podaj kontakt do Działu Innowacji
+  Społecznych ROPS: 12 422 06 36.
+- Odpowiadaj w języku rozmówcy, nawet jeśli źródło jest po polsku.
+
 ## SMS
 Na końcu rozmowy o drodze zaproponuj: „Wysłać SMS-a z podsumowaniem
 trasy?” Jeśli tak – wywołaj wyslij_sms z numerem {{system__caller_id}}
@@ -323,14 +437,41 @@ barier z ostatnich 24 godzin w formacie JSON.
 2. Wybierz 5 najpilniejszych barier. Kryteria: powaga, liczba zgłoszeń,
    to, czy dotyczą osób na wózkach, z chodzikiem lub seniorów.
 3. Dla każdej podaj: miejsce, kategorię, ile razy zgłoszono, kogo dotyczy,
-   jedną konkretną rekomendację dla miasta.
-4. Na końcu 2–3 zdania o trendach.
+   w jakich językach zgłaszano, wynik priorytetu, jedną konkretną
+   rekomendację dla miasta. Jeśli w INNOWACJE jest pasujące rozwiązanie,
+   wskaż je z linkiem; jeśli nie ma – nie wymyślaj.
+4. Osobny akapit „Języki”: czy rozmówcy spoza PL dotarli rzadziej
+   i jakie bariery językowe się powtarzają (dane z METRYKI).
+5. Osobny akapit „Luki w wiedzy”: o co pytano, a czego nie znaleźliśmy.
+6. Na końcu 2–3 zdania o trendach.
 
 Pisz po polsku, rzeczowo, bez ozdobników. Nie wymyślaj zgłoszeń,
 których nie ma w danych. Odpowiedz w Markdown.
 
-DANE:
-{{bariery_json}}
+TEMATY:
+{{tematy_json}}
+
+METRYKI:
+{{metryki_json}}
+
+INNOWACJE:
+{{innowacje_json}}
+```
+
+Tłumaczenie raportu na EN i UK: osobne wywołanie LLM „Przetłumacz wiernie, zachowaj Markdown
+i liczby” – raport jest generowany raz, nie trzy razy.
+
+### 7.4 Opis narzędzia `szukaj_wiedzy` (dla LLM w ElevenLabs)
+
+```
+Szuka w bazie innowacji społecznych i materiałów ROPS Kraków (hubMI)
+rozwiązań, usług i programów pomocy. Wywołaj, gdy rozmówca pyta o pomoc,
+sprzęt, usługi lub wsparcie, albo gdy zgłoszona bariera może mieć znane
+rozwiązanie. Parametry: pytanie – krótkie pytanie po polsku, np. „sprzęt
+ułatwiający poruszanie się na wózku”; grupa – opcjonalnie jedna z:
+senior, wozek, chodzik, wozek_dzieciecy, bagaz, obcokrajowiec,
+nowy_w_miescie, inny. Zwraca do 3 wyników z polami tytul,
+glos_streszczenie, kontakt, url, zrodlo.
 ```
 
 ---
@@ -349,6 +490,8 @@ create table rozmowy (
   cel_podrozy text,
   czy_dotarl boolean,
   czas_trwania_s int,
+  czy_powrot boolean default false,   -- ponowny telefon w ciągu 1 h (z Redis)
+  sms_wyslany boolean default false,
   transkrypcja jsonb,
   utworzono timestamptz default now()
 );
@@ -379,9 +522,106 @@ create table raporty (
 create index on bariery (kategoria);
 create index on bariery (miejsce);
 create index on bariery (utworzono);
+
+-- RAG
+create extension if not exists vector;
+
+create table wiedza_dokumenty (
+  id uuid primary key default gen_random_uuid(),
+  zrodlo text not null,              -- biblioteka | raporty | mapa_wyzwan | publikacje | obserwator
+  url text unique not null,
+  tytul text,
+  kategoria text,
+  grupy text[],
+  glos_streszczenie text,
+  kontakt text,
+  hash text not null,
+  aktywny boolean default true,
+  pobrano timestamptz default now()
+);
+
+create table wiedza_fragmenty (
+  id uuid primary key default gen_random_uuid(),
+  dokument_id uuid references wiedza_dokumenty(id) on delete cascade,
+  nr int not null,
+  tresc text not null,
+  embedding vector(1536),
+  tsv tsvector generated always as (to_tsvector('simple', tresc)) stored
+);
+create index on wiedza_fragmenty using hnsw (embedding vector_cosine_ops);
+create index on wiedza_fragmenty using gin (tsv);
+
+create table wiedza_zapytania (     -- log pytań do RAG, bez numeru telefonu
+  id uuid primary key default gen_random_uuid(),
+  conversation_id text,
+  pytanie text,
+  grupa text,
+  jezyk text,
+  liczba_wynikow int,
+  top_url text,
+  utworzono timestamptz default now()
+);
+
+-- Priorytety i publikacja
+create table tematy (
+  id uuid primary key default gen_random_uuid(),
+  klucz text unique not null,        -- kategoria + znormalizowane miejsce
+  tytul text,
+  kategoria text,
+  miejsce text,
+  dzielnica text,
+  liczba_zgloszen int,
+  sr_powaga numeric,
+  grupy text[],
+  jezyki text[],
+  trend_7d numeric,                  -- zgłoszenia 7 dni / poprzednie 7 dni
+  wynik numeric,                     -- wynik priorytetu, sekcja 8.6
+  priorytet text check (priorytet in ('P1','P2','P3')),
+  status text default 'nowy' check (status in ('nowy','w_analizie','zaplanowany','naprawiony','odrzucony')),
+  rekomendacja text,
+  innowacje jsonb,                   -- dopasowania z RAG
+  pierwsze_zgloszenie timestamptz,
+  ostatnie_zgloszenie timestamptz,
+  zaktualizowano timestamptz default now()
+);
+
+create table publikacje (
+  id uuid primary key default gen_random_uuid(),
+  okres_od timestamptz,
+  okres_do timestamptz,
+  metryki jsonb,                     -- sekcja 9.5
+  tematy jsonb,                      -- tylko tematy z >= 3 zgłoszeniami
+  raport_md jsonb,                   -- {"pl": "...", "en": "...", "uk": "..."}
+  status text default 'szkic' check (status in ('szkic','opublikowana')),
+  opublikowano timestamptz,
+  utworzono timestamptz default now()
+);
 ```
 
-Ranking barier dla dashboardu:
+Wyszukiwanie hybrydowe (wektor + pełnotekstowe, łączone przez Reciprocal Rank Fusion):
+
+```sql
+create or replace function szukaj_wiedzy(q_emb vector(1536), q_text text, q_grupa text, k int default 3)
+returns table (dokument_id uuid, tytul text, glos_streszczenie text, kontakt text, url text, zrodlo text, wynik float)
+language sql stable as $$
+  with wek as (
+    select f.dokument_id, row_number() over (order by f.embedding <=> q_emb) as r
+    from wiedza_fragmenty f order by f.embedding <=> q_emb limit 30
+  ), txt as (
+    select f.dokument_id, row_number() over (order by ts_rank(f.tsv, plainto_tsquery('simple', q_text)) desc) as r
+    from wiedza_fragmenty f where f.tsv @@ plainto_tsquery('simple', q_text) order by r limit 30
+  ), rrf as (
+    select dokument_id, sum(1.0 / (60 + r)) as wynik
+    from (select * from wek union all select * from txt) x group by dokument_id
+  )
+  select d.id, d.tytul, d.glos_streszczenie, d.kontakt, d.url, d.zrodlo, rrf.wynik
+  from rrf join wiedza_dokumenty d on d.id = rrf.dokument_id
+  where d.aktywny and (q_grupa is null or q_grupa = any(d.grupy) or 'inny' = any(d.grupy))
+  order by rrf.wynik desc limit k;
+$$;
+```
+
+Prosty ranking barier (podstawa dla tematów z sekcji 8.6):
 
 ```sql
 select kategoria, miejsce, count(*) as zgloszen, round(avg(powaga), 1) as sr_powaga
@@ -398,10 +638,18 @@ limit 20;
 | POST | `/webhooks/elevenlabs/init` | ElevenLabs (start połączenia) | Czyta kontekst z Redis, zwraca `dynamic_variables` |
 | POST | `/webhooks/elevenlabs` | ElevenLabs | Weryfikuje HMAC, zapisuje rozmowę i bariery, zapisuje kontekst w Redis (TTL 1 h) |
 | POST | `/tools/wyslij_sms` | Agent (nagłówek `x-tool-secret`) | Waliduje numer, wysyła SMS przez Twilio |
-| POST | `/jobs/raport-dzienny` | Cron (nagłówek `x-cron-secret`) | Generuje raport LLM |
-| GET | `/api/bariery/ranking` | Dashboard | Ranking z zapytania wyżej |
-| GET | `/api/bariery/statystyki` | Dashboard | Liczby per kategoria, dzielnica, typ użytkownika |
-| GET | `/api/raporty/najnowszy` | Dashboard | Ostatni raport w Markdown |
+| POST | `/tools/szukaj_wiedzy` | Agent (nagłówek `x-tool-secret`) | RAG: top 3 wyniki z pgvector, cache Redis 1 h, log zapytania |
+| POST | `/jobs/tematy` | Cron co godzinę | Grupuje bariery w tematy, liczy wynik priorytetu, dopina innowacje z RAG |
+| POST | `/jobs/raport-dzienny` | Cron (nagłówek `x-cron-secret`) | Generuje raport LLM (PL + EN + UK) i szkic publikacji |
+| POST | `/jobs/ingest` | Cron tygodniowy | Zasila RAG (sekcja 6.2) |
+| GET | `/api/metryki?od&do&jezyk` | Panel | Metryki z sekcji 9.5 |
+| GET | `/api/tematy?priorytet&status&kategoria&dzielnica&jezyk` | Panel | Lista tematów do priorytetyzacji |
+| PATCH | `/api/tematy/:id` | Panel (zalogowany urzędnik) | Zmiana statusu, notatka |
+| GET | `/api/wiedza/luki` | Panel | Najczęstsze pytania bez wyników w RAG |
+| GET | `/api/raporty/najnowszy?lang=pl` | Panel | Ostatni raport w Markdown w danym języku |
+| POST | `/api/publikacje/:id/opublikuj` | Panel (zalogowany urzędnik) | Publikuje migawkę |
+| GET | `/api/public/metryki.json`, `/api/public/metryki.csv` | Każdy | Otwarte dane z ostatniej opublikowanej migawki (CC BY 4.0) |
+| GET | `/api/public/tematy.json`, `/api/public/tematy.csv` | Każdy | Opublikowane tematy z priorytetem |
 | GET | `/health` | Monitoring | `{ ok: true }` |
 
 ### 8.3 Logika webhooka (pseudokod)
@@ -424,14 +672,15 @@ const rozmowa = await db.rozmowy.upsert({
   jezyk: val("jezyk_rozmowy"),
   cel_podrozy: val("cel_podrozy"),
   czy_dotarl: val("czy_dotarl"),
+  czy_powrot: d.conversation_initiation_client_data?.dynamic_variables?.czy_powrot === "tak",
   transkrypcja: d.transcript,
-});
+});                                                   // sms_wyslany ustawia /tools/wyslij_sms po conversation_id
 
 for (const p of problemy.filter(isValidBariera)) {   // walidacja kategorii i powagi
   await db.bariery.insert({ rozmowa_id: rozmowa.id, ...p });
 }
 
-await saveContext(telefonHash, {                      // sekcja 8.5, błąd tylko logujemy
+await saveContext(telefonHash, {                      // sekcja 8.4, błąd tylko logujemy
   conversation_id: d.conversation_id,
   cel_podrozy: val("cel_podrozy"),
   typ_uzytkownika: val("typ_uzytkownika"),
@@ -443,7 +692,7 @@ await saveContext(telefonHash, {                      // sekcja 8.5, błąd tylk
 return 200;
 ```
 
-### 8.5 Kontekst rozmowy w Redis (TTL 1 h)
+### 8.4 Kontekst rozmowy w Redis (TTL 1 h)
 
 - Klucz: `ctx:{telefon_hash}` – ten sam solony hash co w `rozmowy`, nigdy surowy numer.
 - Wartość: JSON (poniżej), maks. ok. 2 KB.
@@ -501,7 +750,54 @@ return json({
 Zabezpieczenie `/webhooks/elevenlabs/init`: sekret w nagłówku (ustawiany w panelu ElevenLabs)
 albo co najmniej nieodgadniona ścieżka – endpoint zwraca kontekst po numerze telefonu.
 
-### 8.4 Zmienne środowiskowe
+### 8.5 Narzędzie `szukaj_wiedzy` (pseudokod)
+
+```ts
+// POST /tools/szukaj_wiedzy
+checkSecret(req.headers["x-tool-secret"], TOOL_SECRET);
+const { pytanie, grupa, conversation_id } = body;
+
+const cacheKey = `rag:${sha1(`${pytanie.toLowerCase().trim()}|${grupa ?? ""}`)}`;
+let wyniki = await redisGetJson(cacheKey);           // ten sam Redis co kontekst
+if (!wyniki) {
+  const emb = await withTimeout(embed(pytanie), 1200);
+  wyniki = await db.rpc("szukaj_wiedzy", { q_emb: emb, q_text: pytanie, q_grupa: grupa ?? null, k: RAG_TOP_K });
+  await redisSetJson(cacheKey, wyniki, RAG_CACHE_TTL_S);
+}
+await db.wiedza_zapytania.insert({ conversation_id, pytanie, grupa, liczba_wynikow: wyniki.length, top_url: wyniki[0]?.url });
+
+return {                                              // krótko: każdy token to latencja głosu
+  wyniki: wyniki.map(w => ({ tytul: w.tytul, glos_streszczenie: w.glos_streszczenie,
+                             kontakt: w.kontakt, url: w.url, zrodlo: w.zrodlo })),
+  komunikat: wyniki.length ? null : "Brak wyników. Podaj kontakt do ROPS: 12 422 06 36.",
+};
+// timeout lub błąd → { wyniki: [], komunikat: "Wyszukiwarka nie odpowiada." } – nigdy 500
+```
+
+### 8.6 Tematy i wynik priorytetu (job co godzinę)
+
+1. **Grupowanie.** Bariery z 30 dni grupujemy po `kategoria` + znormalizowane `miejsce`
+   (małe litery, bez polskich znaków, bez „ul.”). Raz dziennie LLM łączy oczywiste duplikaty
+   („Dworzec Główny hala” = „hala dworca”) i nadaje temat czytelny tytuł.
+2. **Wynik priorytetu** (wagi w `config/priorytety.ts`, łatwe do strojenia):
+
+   ```
+   wynik = Σ po zgłoszeniach [ waga_powagi × waga_grupy × waga_swiezosci ]
+           × (1 + min(trend_7d − 1, 1))       // rośnie → do ×2
+           × (1 + 0.2 × (liczba_jezykow − 1))   // problem widoczny w wielu językach
+   waga_powagi:    1 → 1, 2 → 2, 3 → 4
+   waga_grupy:     wozek, chodzik, senior → 1.5; obcokrajowiec, wozek_dzieciecy → 1.2; reszta → 1
+   waga_swiezosci: zgłoszenie z 7 dni → 1, starsze → 0.5
+   ```
+
+   Progi: **P1** ≥ 12 albo dowolne zgłoszenie z powagą 3 od 2+ osób, **P2** ≥ 5, **P3** reszta.
+   W panelu przy wyniku pokazujemy rozbicie („3 zgłoszenia × powaga 3 × wózek”), żeby urzędnik
+   rozumiał, skąd priorytet – bez czarnej skrzynki.
+3. **Rekomendacje.** Dla tematów P1 i P2 job pyta `szukaj_wiedzy` (kategoria + opis) i zapisuje
+   do 3 dopasowań z Biblioteki Innowacji w `tematy.innowacje`.
+4. Status ustawia człowiek. Temat `naprawiony`, do którego wpłyną nowe zgłoszenia, wraca jako `nowy`.
+
+### 8.7 Zmienne środowiskowe
 
 ```
 TWILIO_ACCOUNT_SID=
@@ -517,22 +813,106 @@ PHONE_HASH_SALT=
 INIT_WEBHOOK_SECRET=
 REDIS_URL=                    # albo UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 CONTEXT_TTL_S=3600
+EMBEDDING_API_KEY=
+EMBEDDING_MODEL=text-embedding-3-small
+RAG_TOP_K=3
+RAG_CACHE_TTL_S=3600
+PUBLIC_MIN_ZGLOSZEN=3         # k-anonimowość na stronie publicznej
+AUTO_PUBLISH=false            # true tylko na demo
+NEXT_PUBLIC_DEFAULT_LOCALE=pl
 ```
+
 
 ---
 
-## 9. Dashboard dla miasta
+## 9. Frontend (panel miasta i strona publiczna) – design w stylu Apple
 
-Jedna strona, czytelna dla urzędnika, zgodna z WCAG 2.1 AA:
+### 9.1 Stack
 
-1. **Licznik na górze:** rozmowy dziś, zgłoszone bariery, % osób, które dotarły.
-2. **Ranking barier:** tabela z sekcji 8.1, filtry po kategorii, dzielnicy i typie użytkownika.
-3. **Wykres kategorii:** słupki, kolor plus etykieta tekstowa (nie sam kolor).
-4. **Raport dnia:** najnowszy raport LLM w Markdown.
-5. **Na żywo:** nowa bariera pojawia się na górze listy kilka sekund po rozmowie (efekt na demo).
-6. **Przycisk „Zadzwoń”** z numerem i widget głosowy ElevenLabs jako zapasowe wejście.
+Next.js 15 (App Router, Server Components) + Tailwind 4 + Radix UI (dostępne prymitywy:
+dialog, tabs, popover) + Recharts albo visx do wykresów + `next-intl` (PL / EN / UK) +
+Supabase Auth (magic link) dla urzędników. Bez gotowego motywu shadcn „na domyślnych” –
+komponenty stylujemy według sekcji 9.3.
 
-Dane demonstracyjne oznaczone flagą `demo = true` i podpisem „dane przykładowe”.
+### 9.2 Strony
+
+| Ścieżka | Dla kogo | Zawartość |
+|---|---|---|
+| `/[lang]` | Publiczna | Hero „Kraków bez barier”, numer do bota (duży, klikalny), widget głosowy, 4 kluczowe liczby z ostatniej publikacji |
+| `/[lang]/raport` | Publiczna | Opublikowane metryki, tematy P1–P3, raport dnia, pobierz CSV/JSON, archiwum publikacji |
+| `/[lang]/panel` | Urzędnik | **Przegląd:** kafle metryk, trend 14 dni, nowe tematy P1 „na żywo” |
+| `/[lang]/panel/priorytety` | Urzędnik | Lista tematów posortowana po wyniku, filtry, zmiana statusu, rozbicie wyniku, dopasowane innowacje z RAG |
+| `/[lang]/panel/jezyki` | Urzędnik | Metryki per język rozmowy (sekcja 9.5), bariery `JEZYK`, różnica w odsetku dotarcia PL vs inne |
+| `/[lang]/panel/wiedza` | Urzędnik | Luki w wiedzy: pytania bez wyników, najczęściej polecane innowacje, data ostatniego ingestu |
+| `/[lang]/panel/publikacje` | Urzędnik | Szkice publikacji, podgląd tak, jak zobaczy ją mieszkaniec, przycisk „Opublikuj” |
+
+### 9.3 Język wizualny (Apple Human Interface Guidelines, wersja webowa)
+
+Cel: spokój, czytelność i hierarchia jak w aplikacjach Apple (Zdrowie, Ustawienia, Pogoda).
+Nie kopiujemy marki Apple ani SF Symbols (licencja tylko na platformy Apple) – bierzemy zasady.
+
+| Element | Reguła |
+|---|---|
+| Krój | `font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif` – na Macu i iPhonie SF, gdzie indziej Inter. `font-feature-settings: "tnum"` dla liczb w metrykach. |
+| Typografia | Large Title 34/41 bold na górze każdej strony, Title 2 22/28 semibold dla sekcji, Body 17/22, Footnote 13/18 w kolorze `secondaryLabel`. Liczby w kaflach 48 px semibold, zaokrąglone. |
+| Siatka | Odstępy w wielokrotności 4 / 8 px, marginesy 20 px (telefon) i 32 px (desktop), max szerokość treści 1200 px. |
+| Powierzchnie | Tło `systemGroupedBackground` (#F2F2F7 / #000), karty `secondarySystemGroupedBackground` (#FFF / #1C1C1E), promień 20 px dla kart i 12 px dla przycisków i pól, bez obramowań, delikatny cień tylko przy uniesieniu. |
+| Nawigacja | Górny pasek przyklejony, półprzezroczysty z `backdrop-filter: saturate(180%) blur(20px)`, linia 0.5 px pod spodem. Na telefonie tab bar na dole (Przegląd, Priorytety, Języki, Wiedza). Duży tytuł zwija się do małego przy przewijaniu. |
+| Kontrolki | Segmented control do zakresu dat (24 h / 7 dni / 30 dni) i języka; listy w stylu „inset grouped” z chevronem; arkusz (sheet) wysuwany od dołu dla szczegółów tematu na telefonie, panel boczny na desktopie. |
+| Kolor | Akcent `systemBlue` #007AFF (ciemny: #0A84FF). Priorytety: P1 `systemRed` #FF3B30, P2 `systemOrange` #FF9500, P3 `systemGray` #8E8E93 – **zawsze z etykietą tekstową „P1”**, nie sam kolor. Tekst w kolorze na białym tle tylko w ciemniejszych wariantach (np. #C4271D, #B25000), bo jasne kolory systemowe nie przechodzą kontrastu 4.5:1. |
+| Wykresy | Styl Swift Charts: słupki z zaokrąglonymi końcami, mało linii siatki (tylko pozioma, 0.5 px), etykiety osi `secondaryLabel`, tooltip jako mała karta, jeden kolor akcentu + szarości, legenda tekstowa. Każdy wykres ma obok tabelę „Pokaż dane” dla czytników ekranu. |
+| Ruch | Sprężyste przejścia 250–350 ms (`cubic-bezier(0.32, 0.72, 0, 1)`), liczby w kaflach animują się przy zmianie; wszystko wyłączone przy `prefers-reduced-motion`. |
+| Tryb ciemny | Pełny, przez `prefers-color-scheme` + przełącznik; kolory jako zmienne CSS (`--label`, `--secondary-label`, `--grouped-bg`, `--card-bg`, `--separator`, `--tint`). |
+| Ikony | Lucide, kreska 1.75 px, rozmiar dopasowany do tekstu obok. |
+| Dostępność | Fokus jako niebieska poświata 3 px (`--tint` z przezroczystością), cele dotyku min. 44 × 44 px, Dynamic Type przez `rem` (strona skaluje się z ustawieniem przeglądarki), poprawne nagłówki i `aria-live="polite"` dla nowych tematów „na żywo”. |
+
+Kluczowe komponenty: `MetricTile` (etykieta, duża liczba, zmiana vs poprzedni okres ze strzałką
+i tekstem „+12% vs wczoraj”, mini-wykres), `PriorityBadge`, `TopicRow` (tytuł, miejsce, języki
+jako małe flagi-tekst „PL · EN · UK”, wynik, status), `TopicSheet` (rozbicie wyniku, zgłoszenia,
+innowacje z RAG z linkami, zmiana statusu), `LanguageSwitcher` (segmented PL / EN / UK),
+`PublishBar` (przyklejony na dole szkicu: „Opublikuj dla mieszkańców”).
+
+### 9.4 Języki
+
+- **Interfejs:** `next-intl`, pliki `messages/pl.json`, `en.json`, `uk.json`; prefiks w URL
+  (`/pl/raport`), wybór zapamiętany w ciasteczku, domyślny z `Accept-Language`, `hreflang` na stronach publicznych.
+- **Treści z danych:** raport dnia generowany po polsku i tłumaczony (sekcja 7.3), tytuły tematów
+  tłumaczone przy publikacji i zapisywane w migawce. Nazwy miejsc zostają po polsku.
+- **Języki rozmów jako metryka:** filtr „język rozmowy” na każdej stronie panelu i osobny widok
+  `/panel/jezyki`.
+
+### 9.5 Metryki raportowalne
+
+Każda metryka ma stałą definicję, okres i źródło – te same liczby w panelu, raporcie i otwartych danych.
+
+| Metryka | Definicja | Podział |
+|---|---|---|
+| `rozmowy` | Liczba zakończonych rozmów | język, typ użytkownika, dzień |
+| `mediana_czasu_s` | Mediana `czas_trwania_s` | język |
+| `odsetek_dotarlo` | `czy_dotarl = true` / rozmowy z celem podróży | język, typ użytkownika |
+| `ponowne_telefony` | Odsetek rozmów z `czy_powrot = true` (sygnał zgubienia się) | język |
+| `bariery` | Liczba zgłoszonych barier | kategoria, dzielnica, powaga, język |
+| `udzial_grup_wrazliwych` | Odsetek barier od `senior`, `wozek`, `chodzik` | – |
+| `tematy_p1`, `tematy_p2` | Liczba otwartych tematów w danym priorytecie | kategoria, dzielnica |
+| `czas_reakcji_dni` | Mediana od pierwszego zgłoszenia do statusu `zaplanowany` | priorytet |
+| `naprawione` | Tematy przeniesione do `naprawiony` w okresie | kategoria |
+| `bariery_jezykowe` | Bariery kategorii `JEZYK` | język rozmowy |
+| `luka_jezykowa_dotarcia` | `odsetek_dotarlo` (PL) − `odsetek_dotarlo` (inne języki), w punktach procentowych | język |
+| `pytania_rag`, `odsetek_bez_wynikow` | Liczba pytań do `szukaj_wiedzy` i odsetek bez wyników | grupa, język |
+| `sms_wyslane` | Liczba wysłanych SMS-ów | – |
+
+Metryki liczone są widokiem SQL `metryki_dzienne` (materializowany, odświeżany przez job tematów).
+
+### 9.6 Publikowanie
+
+- **Migawka, nie dane na żywo.** Strona publiczna i otwarte dane pokazują tylko ostatnią
+  publikację ze statusem `opublikowana` – urzędnik wie dokładnie, co wyszło na zewnątrz.
+- **Rytm:** szkic dzienny (cron), publikacja ręczna z panelu; raz w tygodniu podsumowanie tygodnia.
+- **Prywatność:** tylko agregaty, tematy z co najmniej `PUBLIC_MIN_ZGLOSZEN` (3) zgłoszeniami,
+  bez transkrypcji, bez opisów słowo w słowo (tylko tytuł tematu), bez godzin pojedynczych zgłoszeń.
+- **Formaty:** strona `/[lang]/raport`, `metryki.csv/json`, `tematy.csv/json`, licencja CC BY 4.0,
+  każdy plik z polami `okres_od`, `okres_do`, `opublikowano`, `wersja_definicji`.
+- Dane demonstracyjne (`demo = true`) mają podpis „dane przykładowe” i nigdy nie trafiają do publikacji bez tego podpisu.
 
 ---
 
@@ -542,6 +922,10 @@ Dane demonstracyjne oznaczone flagą `demo = true` i podpisem „dane przykłado
 - Prompt zabrania pytania o dane osobowe; ekstrakcja zapisuje tylko miejsca publiczne.
 - Kontekst w Redis: klucz to solony hash numeru, treść bez danych osobowych, automatyczne
   usunięcie po 1 h (TTL). Redis w regionie UE (Upstash eu-central lub Railway EU).
+- Log pytań RAG (`wiedza_zapytania`) bez numeru telefonu; pytanie formułuje agent, nie zapisujemy wypowiedzi słowo w słowo.
+- Publikacje tylko z agregatów i tematów z min. 3 zgłoszeniami (sekcja 9.6). Panel miasta za logowaniem
+  (Supabase Auth + RLS: tylko rola `urzednik` czyta tabele z transkrypcjami).
+- Treści z hubMI / ROPS: zgodnie z zasadami wykorzystania innowacji MIIS, zawsze ze źródłem i linkiem.
 - Webhook weryfikowany HMAC, narzędzia i cron chronione sekretami w nagłówkach.
 - Komunikat na początku rozmowy o nagrywaniu i celu (do dopisania w pierwszej wiadomości przed wdrożeniem).
 - Hosting w regionie UE (Supabase EU; opcje rezydencji danych ElevenLabs i Twilio sprawdzić przed wdrożeniem).
@@ -558,8 +942,10 @@ Dane demonstracyjne oznaczone flagą `demo = true` i podpisem „dane przykłado
 | ElevenLabs Agents | za minutę rozmowy | zależnie od planu |
 | LLM raportu | za dzień | kilka tysięcy tokenów dziennie |
 | Supabase | miesięcznie | plan darmowy wystarczy na pilotaż |
-| Redis (Upstash / Railway) | miesięcznie | plan darmowy wystarczy, 2 operacje na rozmowę |
-| Hosting backendu i dashboardu | miesięcznie | Vercel / Railway |
+| Redis (Upstash / Railway) | miesięcznie | plan darmowy wystarczy, 2 operacje na rozmowę + cache RAG |
+| Embeddingi | jednorazowo + przy zmianach | ingest kilkuset wpisów i PDF-ów: groszowe kwoty; 1 embedding na pytanie w rozmowie |
+| LLM: streszczenia do głosu, tematy, tłumaczenie raportu | ingest + dziennie | streszczenia raz na wpis; tłumaczenie raportu na EN i UK codziennie |
+| Hosting backendu i frontendu | miesięcznie | Vercel / Railway |
 
 Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmowach miesięcznie koszt wynosi około Y zł”.
 
@@ -571,9 +957,9 @@ Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmo
 |---|---|---|
 | 0–1 h | Konta Twilio, ElevenLabs, Supabase; numer; import numeru do ElevenLabs | Nazwa, logo, paleta o wysokim kontraście |
 | 1–3 h | Agent: prompt 7.1, głos, język; pierwsze testowe rozmowy | Przejście trasy dworzec → Arena i spisanie `dojazd-hackyeah.md` |
-| 3–6 h | Pola analizy (sekcja 5), webhook, tabele, zapis barier, Redis + webhook inicjacji (sekcja 8.5) | Makieta dashboardu, pozostałe dokumenty bazy wiedzy |
-| 6–9 h | Dashboard: ranking, wykres, widok na żywo | Wdrożenie UI, audyt WCAG |
-| 9–11 h | Narzędzie `wyslij_sms`, raport dzienny, dane demonstracyjne | Slajdy i scenariusz filmu |
+| 3–6 h | Pola analizy (sekcja 5), webhook, tabele, zapis barier, Redis + webhook inicjacji (sekcja 8.4); w tle `npm run ingest` (sekcja 6.2) | Design system z sekcji 9.3 (zmienne CSS, kafle, listy, sheet) w Figmie, makiety Przeglądu i Priorytetów, teksty PL / EN / UK |
+| 6–9 h | Narzędzie `szukaj_wiedzy`, job tematów i wynik priorytetu (sekcja 8.6), API metryk | Wdrożenie komponentów w Next.js, tryb ciemny, strona publiczna |
+| 9–11 h | Panel: Przegląd, Priorytety, Języki, Wiedza; `wyslij_sms`, raport dzienny z tłumaczeniem, publikacja, dane demonstracyjne | Audyt WCAG, dopracowanie animacji, slajdy i scenariusz filmu |
 | 11–13 h | Testy kilkunastu rozmów, poprawki promptu | Nagranie filmu zapasowego |
 | reszta | Bufor | Bufor |
 
@@ -586,10 +972,12 @@ Aktualne ceny sprawdź na stronach dostawców i podaj wyliczenie „przy X rozmo
    Bot pyta o bagaż, prowadzi krok po kroku, wybiera windę.
 3. **Bariera:** „Winda nie działa.” Bot pomaga, pyta, gdzie dokładnie.
 4. **Zgubienie się:** „Chyba wysiadłem za wcześnie.” Bot uspokaja i prosi o podanie telefonu przechodniowi.
-5. **Ponowny telefon:** rozłącz się i zadzwoń jeszcze raz. Bot: „Jechał pan na HackYeah, skończyliśmy na Rondzie Mogilskim – gdzie pan teraz jest?” (kontekst z Redis).
-6. **Zmiana języka:** to samo pytanie po angielsku lub ukraińsku.
-7. **Dashboard:** po rozmowie na ekranie pojawia się `AWARIA / Dworzec Główny / powaga 3 / bagaż`, obok ranking i raport dnia.
-8. **Zamknięcie:** „Bot prowadzi ludzi po mieście, a przy okazji mówi miastu, co naprawić.”
+5. **Pomoc z hubMI:** „Moja mama jeździ na wózku, jest coś, co jej ułatwi życie?” Bot: „Chwileczkę, sprawdzam… Według Biblioteki Innowacji Społecznych ROPS…” i proponuje SMS z linkiem (RAG).
+6. **Ponowny telefon:** rozłącz się i zadzwoń jeszcze raz. Bot: „Jechał pan na HackYeah, skończyliśmy na Rondzie Mogilskim – gdzie pan teraz jest?” (kontekst z Redis).
+7. **Zmiana języka:** to samo pytanie po ukraińsku – bot odpowiada po ukraińsku, choć źródła są po polsku.
+8. **Panel:** po rozmowie temat `AWARIA · Dworzec Główny` wskakuje na listę jako **P1** (rozbicie wyniku, języki PL · UK, dopasowana innowacja z RAG). Przełączenie interfejsu na EN, widok Języki z luką dotarcia.
+9. **Publikacja:** „Opublikuj” → strona publiczna i plik CSV z metrykami dla mieszkańców.
+10. **Zamknięcie:** „Bot prowadzi ludzi po mieście, a przy okazji mówi miastu, co naprawić.”
 
 Zawsze miej nagrany film zapasowy na wypadek problemów z siecią.
 
@@ -602,3 +990,5 @@ Zawsze miej nagrany film zapasowy na wypadek problemów z siecią.
 - Panel dla miasta do oznaczania barier jako „naprawione” i SMS zwrotny do zgłaszających.
 - Wolontariusze i mieszkańcy edytujący bazę wiedzy o trudnych przystankach.
 - Integracja z aplikacją mKraków.
+- Oficjalne API / eksport hubMI.pl zamiast crawla, gdy będzie dostępne; Obserwator Statystyk jako warstwa na mapie barier.
+- Subskrypcja publikacji (RSS / e-mail) dla radnych dzielnic i organizacji pozarządowych.
