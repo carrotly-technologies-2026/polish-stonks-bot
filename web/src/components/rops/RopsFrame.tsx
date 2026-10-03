@@ -62,7 +62,7 @@ export function DemoRibbon({ lang }: { lang: string }) {
   const hide = () => { setHidden(true); try { sessionStorage.setItem(RIBBON_KEY, '1'); } catch {} };
   return (
     <aside role="note" aria-label={t('ribbonLabel')}
-      className="fixed bottom-4 left-4 z-[55] flex max-w-[min(44rem,calc(100vw-6.5rem))] items-center gap-2 rounded-full border border-[var(--outline-variant)] bg-surface py-1 pr-1 pl-3 text-[0.75rem] leading-[1rem] text-[var(--on-surface)] shadow-[0_2px_10px_rgba(0,0,0,0.2)] max-sm:rounded-2xl">
+      className="rops-light fixed bottom-4 left-4 z-[55] flex max-w-[min(44rem,calc(100vw-6.5rem))] items-center gap-2 rounded-full border border-[var(--outline-variant)] bg-surface py-1 pr-1 pl-3 text-[0.75rem] leading-[1rem] text-[var(--on-surface)] shadow-[0_2px_10px_rgba(0,0,0,0.2)] max-sm:rounded-2xl">
       <FlaskConical size={14} className="shrink-0 text-[var(--warning)]" aria-hidden />
       <p className="min-w-0">
         {t('ribbon')}{' · '}
