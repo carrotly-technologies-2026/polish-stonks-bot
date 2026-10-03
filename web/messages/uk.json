@@ -58,10 +58,7 @@
     "publicReport": "Публічний звіт",
     "citizenPage": "Для мешканців",
     "csvMetrics": "Метрики (CSV)",
-    "csvTopics": "Теми (CSV)",
-    "login": "Увійти для редагування",
-    "logout": "Вийти",
-    "editMode": "Режим редагування · вийти"
+    "csvTopics": "Теми (CSV)"
   },
   "errors": {
     "backendTitle": "Не вдалося завантажити дані",
@@ -302,8 +299,7 @@
     "viewPublic": "Відкрити публічну сторінку",
     "colPeriod": "Період",
     "colCreated": "Створено",
-    "colTopics": "Теми",
-    "loginRequired": "Увійдіть для редагування (кнопка у верхньому правому куті), щоб змінювати дані."
+    "colTopics": "Теми"
   },
   "categories": {
     "BARIERA_FIZYCZNA": "Фізичний бар’єр",
