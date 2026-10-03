@@ -22,7 +22,7 @@ Wartości są w Coolify → hackyeah-2026 → universal-backend → Environment 
 |---|---|
 | `HALOHUB_TOOL_SECRET` | nagłówek `x-tool-secret` narzędzia `szukaj_wiedzy` |
 | `HALOHUB_INIT_SECRET` | nagłówek `x-init-secret` webhooka inicjacji (albo `?key=` w URL) |
-| `ELEVENLABS_WEBHOOK_SECRET` | sekret HMAC webhooka po rozmowie (ElevenLabs generuje go sam – skopiuj do Coolify i zrób redeploy) |
+| `ELEVENLABS_WEBHOOK_SECRET` | opcjonalnie: sekret HMAC webhooka po rozmowie (ElevenLabs generuje go sam). Nieustawiony = webhook przyjmuje niepodpisane żądania (tak jest teraz na produkcji) |
 | `HALOHUB_ADMIN_TOKEN` | `Authorization: Bearer …` – tylko do odczytu panelu / jobów, agent go nie potrzebuje |
 
 ## Kiedy agent co wysyła
@@ -120,7 +120,8 @@ method POST, URL jak wyżej, header `x-tool-secret` jako secret, body: `pytanie`
 ### 3. Po rozmowie – webhook z wynikami
 
 ElevenLabs wysyła go sam (Settings → Webhooks → Post-call, typ *transcription*,
-URL `https://hy26-api.rabbithole.carrotly.tech/halohub/webhooks/elevenlabs`). Backend wymaga podpisu:
+URL `https://hy26-api.rabbithole.carrotly.tech/halohub/webhooks/elevenlabs`). Podpis jest sprawdzany
+tylko wtedy, gdy w backendzie ustawiono `ELEVENLABS_WEBHOOK_SECRET` (teraz nie jest – wystarczy sam payload):
 
 ```
 ElevenLabs-Signature: t=<unix_ts>,v0=<hex(HMAC-SHA256(ELEVENLABS_WEBHOOK_SECRET, "<unix_ts>.<surowe body>"))>
@@ -162,7 +163,8 @@ nadpisuje rozmowę (bez duplikatów), więc retry są bezpieczne. Inne typy zdar
 
 #### Agent spoza ElevenLabs
 
-Wysyła ten sam payload i sam liczy podpis, np. w Node:
+Wysyła ten sam payload (`POST` z `content-type: application/json`). Jeśli backend ma ustawiony
+`ELEVENLABS_WEBHOOK_SECRET`, trzeba dodać podpis, np. w Node:
 
 ```js
 import { createHmac } from 'node:crypto';
@@ -205,5 +207,5 @@ curl -s -X POST $API/halohub/webhooks/elevenlabs/init -H "x-init-secret: $HALOHU
 - [ ] Pipeline: ingest *zakończony*, embedding blisko 100%
 - [ ] ElevenLabs: webhook inicjacji (+ `x-init-secret`), narzędzie `szukaj_wiedzy` (+ `x-tool-secret`),
       post-call webhook, 8 pól analizy, zmienne `czy_powrot` / `poprzedni_kontekst`
-- [ ] `ELEVENLABS_WEBHOOK_SECRET` i `ELEVENLABS_AGENT_ID` wpisane w Coolify + redeploy backendu
+- [ ] `ELEVENLABS_AGENT_ID` wpisane w Coolify + redeploy backendu (widget na stronie); `ELEVENLABS_WEBHOOK_SECRET` opcjonalnie
 - [ ] Testowy telefon → rozmowa widoczna w panelu → Rozmowy; po godzinie (lub „Przelicz tematy”) temat w Priorytetach
