@@ -56,11 +56,12 @@
     "openData": "Open data",
     "section_links": "Links",
     "publicReport": "Public report",
-    "citizenPage": "For jury & residents",
+    "citizenPage": "How to test",
     "csvMetrics": "Metrics (CSV)",
     "csvTopics": "Topics (CSV)",
     "rops": "ROPS knowledge assistant",
-    "ideas": "Ideas"
+    "ideas": "Ideas",
+    "ropsSearch": "ROPS search"
   },
   "errors": {
     "backendTitle": "Couldn’t load the data",
@@ -504,8 +505,8 @@
     "next": "Next page"
   },
   "jury": {
-    "planTitle": "Jury: 3-minute test plan",
-    "planLead": "All panel pages are public – no login needed.",
+    "planTitle": "3-minute test plan",
+    "planLead": "All pages are public – no login.",
     "plan1": "Call the number above or talk in the browser.",
     "plan2": "Try two scenarios from the list below – e.g. a route and a barrier report.",
     "plan3": "Hang up and open Calls – your call appears shortly. Click the row to see the transcript and fields.",
@@ -552,9 +553,29 @@
     "p_publikacje": "Generate the daily draft and publish it for residents.",
     "p_otwarte": "Download CSV/JSON under CC BY 4.0.",
     "p_raport": "The public report for residents – published snapshots only.",
-    "tipTitle": "Tip for the jury",
-    "tip": "The Publications page has an “Add sample data” button so the panel is not empty. Real calls are kept separate from sample data (marked as demo).",
-    "do": "Do this"
+    "tipTitle": "Tip",
+    "tip": "Topics are recomputed every hour. To see the barrier from your call right away, click “Recalculate topics” on the Priorities page.",
+    "do": "Do this",
+    "s8t": "Official matters",
+    "s8say": "Where in Kraków can I get an ID card and how do I get there?",
+    "s8say2": "I'm from Ukraine, how do I get a PESEL number?",
+    "s8get": "The right office or branch, what to bring, a source link and the nearest stop – from the Kraków official-matters guide.",
+    "s9t": "About the project",
+    "s9say": "Who are you and who made you?",
+    "s9get": "MayAI briefly introduces the project. On a first call she introduces herself; returning callers get a shorter greeting.",
+    "ropsTitle": "ROPS knowledge assistant – web chat",
+    "ropsLead": "The same knowledge base as on the phone, in a chat window embedded on a rops.krakow.pl preview.",
+    "r1t": "Ask in the chat",
+    "r1": "Click the bubble in the bottom-right corner and pick a suggestion, e.g. “Innovations for seniors with dementia”. Answers have numbered sources [n] and downloadable files.",
+    "r2t": "Submit an idea",
+    "r2": "In the chat click “Submit an innovation idea”. Five steps: description, essence, audience, stage, preview. The assistant hints at each field and shows similar innovations.",
+    "r3t": "Check it in the panel",
+    "r3": "Your idea card appears on the Ideas list (without contact data).",
+    "r4t": "Advanced search",
+    "r4": "Filter by source, category and audience. Filters live in the URL, so results can be shared.",
+    "p_pomysly": "Idea cards from the ROPS chat idea creator – without contact data.",
+    "p_rops": "Knowledge assistant chat embedded on a rops.krakow.pl preview, with the idea creator.",
+    "p_ropsSzukaj": "Search ROPS materials with filters."
   },
   "rops": {
     "disclaimer": "HackYeah 2026 prototype – a demonstration, not the official website of ROPS in Kraków. Content and files come from rops.krakow.pl.",

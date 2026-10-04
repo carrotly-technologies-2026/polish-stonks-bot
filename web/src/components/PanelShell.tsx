@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Languages, LibraryBig, Lightbulb, ListOrdered,
+  BookOpen, Database, ExternalLink, FileSpreadsheet, FileText, Gauge, Info, Languages, LibraryBig, Lightbulb, ListOrdered,
   Megaphone, Menu, Phone, Workflow,
 } from 'lucide-react';
 import { globalQuery } from '@/lib/filters';
@@ -49,6 +49,7 @@ function SideNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
         {!collapsed && <p className="label px-4 pb-1 uppercase">{t('section_links')}</p>}
         <ul className="flex flex-col gap-0.5">
           {[
+            { href: `/${locale}/info`, key: 'citizenPage', Icon: Info },
             { href: `/${locale}/raport`, key: 'publicReport', Icon: FileText },
             { href: `/${locale}/rops`, key: 'rops', Icon: LibraryBig },
             { href: '/api/open-data/metryki.csv', key: 'csvMetrics', Icon: FileSpreadsheet },

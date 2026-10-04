@@ -56,11 +56,12 @@
     "openData": "Otwarte dane",
     "section_links": "Linki",
     "publicReport": "Raport publiczny",
-    "citizenPage": "Dla jury i mieszkańców",
+    "citizenPage": "Jak przetestować",
     "csvMetrics": "Metryki (CSV)",
     "csvTopics": "Tematy (CSV)",
     "rops": "Asystent wiedzy ROPS",
-    "ideas": "Pomysły"
+    "ideas": "Pomysły",
+    "ropsSearch": "Wyszukiwarka ROPS"
   },
   "errors": {
     "backendTitle": "Nie udało się pobrać danych",
@@ -504,8 +505,8 @@
     "next": "Następna strona"
   },
   "jury": {
-    "planTitle": "Jury: plan testu na 3 minuty",
-    "planLead": "Wszystkie strony panelu są publiczne – bez logowania.",
+    "planTitle": "Plan testu na 3 minuty",
+    "planLead": "Wszystkie strony są publiczne – bez logowania.",
     "plan1": "Zadzwoń na numer powyżej albo porozmawiaj w przeglądarce.",
     "plan2": "Wypróbuj dwa scenariusze z listy niżej – np. trasę i zgłoszenie bariery.",
     "plan3": "Rozłącz się i otwórz Rozmowy – twoja rozmowa pojawi się po chwili. Kliknij wiersz, aby zobaczyć transkrypcję i pola.",
@@ -552,9 +553,29 @@
     "p_publikacje": "Wygeneruj dzienny szkic i opublikuj go dla mieszkańców.",
     "p_otwarte": "Pobierz CSV/JSON na licencji CC BY 4.0.",
     "p_raport": "Publiczny raport dla mieszkańców – tylko opublikowane migawki.",
-    "tipTitle": "Wskazówka dla jury",
-    "tip": "Na stronie Publikacje jest przycisk „Dodaj dane przykładowe”, żeby panel nie był pusty. Prawdziwe rozmowy są oddzielone od danych przykładowych (oznaczonych jako demo).",
-    "do": "Zrób"
+    "tipTitle": "Wskazówka",
+    "tip": "Tematy przeliczają się co godzinę. Żeby barierę z Twojej rozmowy zobaczyć od razu, kliknij „Przelicz tematy” na stronie Priorytety.",
+    "do": "Zrób",
+    "s8t": "Sprawy urzędowe",
+    "s8say": "Gdzie w Krakowie wyrobię dowód osobisty i jak tam dojadę?",
+    "s8say2": "Jestem z Ukrainy, jak dostanę PESEL?",
+    "s8get": "Właściwy urząd lub filia, co zabrać, link do źródła i najbliższy przystanek – z przewodnika po sprawach urzędowych Krakowa.",
+    "s9t": "O projekcie",
+    "s9say": "Kim jesteś i kto cię stworzył?",
+    "s9get": "MayAI krótko przedstawi projekt. Przy pierwszym połączeniu sama się przedstawia, a przy kolejnym wita krócej.",
+    "ropsTitle": "Asystent wiedzy ROPS – czat na stronie",
+    "ropsLead": "Ta sama baza wiedzy co w telefonie, ale w oknie czatu osadzonym na podglądzie rops.krakow.pl.",
+    "r1t": "Zadaj pytanie w czacie",
+    "r1": "Kliknij dymek w prawym dolnym rogu i wybierz podpowiedź, np. „Innowacje dla seniorów z demencją”. Odpowiedź ma numerowane źródła [n] i pliki do pobrania.",
+    "r2t": "Zgłoś pomysł w kreatorze",
+    "r2": "W czacie kliknij „Zgłoś pomysł na innowację”. Pięć kroków: opis, istota, dla kogo, etap, podgląd. Asystent podpowiada przy polach i pokazuje podobne innowacje.",
+    "r3t": "Sprawdź zgłoszenie w panelu",
+    "r3": "Twoja fiszka pojawi się na liście Pomysły (bez danych kontaktowych).",
+    "r4t": "Wyszukiwarka zaawansowana",
+    "r4": "Filtry po źródle, kategorii i grupie odbiorców. Filtry są w adresie strony, więc wynik można udostępnić.",
+    "p_pomysly": "Fiszki z kreatora pomysłów w czacie ROPS – bez danych kontaktowych.",
+    "p_rops": "Czat z asystentem wiedzy osadzony na podglądzie rops.krakow.pl, razem z kreatorem pomysłów.",
+    "p_ropsSzukaj": "Wyszukiwarka materiałów ROPS z filtrami."
   },
   "rops": {
     "disclaimer": "Prototyp HackYeah 2026 – demonstracja, nie jest oficjalną stroną ROPS w Krakowie. Treści i pliki pochodzą z rops.krakow.pl.",

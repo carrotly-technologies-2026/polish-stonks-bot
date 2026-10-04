@@ -15,9 +15,9 @@ function publicUrl(req: NextRequest, path: string): URL {
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // The analytics panel is the start page.
+  // The testers' guide is the start page.
   const home = pathname.match(LOCALE_HOME);
-  if (home) return NextResponse.redirect(publicUrl(req, `/${home[1]}/panel`));
+  if (home) return NextResponse.redirect(publicUrl(req, `/${home[1]}/info`));
 
   if (pathname.startsWith('/api/')) return NextResponse.next();
   return intl(req);
